@@ -3,11 +3,20 @@
 This private repository demonstrates adding Model Context Protocol (MCP)
 capabilities to an existing C# Windows Forms hotel management application.
 
+## Architecture
+
+See the [Architecture Decision Records](docs/adr/README.md), starting with
+[ADR 0001: Shared hotel application layer for Windows Forms and MCP](docs/adr/0001-shared-hotel-application-layer-and-mcp.md).
+The ADR describes the intended refactoring and future MCP integration; it does
+not represent implemented functionality.
+
 ## Presentation versions
 
 | Tag | Meaning |
 | --- | --- |
 | `before-mcp` | Original application before MCP implementation, with the database password replaced by a placeholder. |
+| `adr-before-refactoring` | Accepted ADR documentation-only milestone, before application refactoring. |
+| `after-refactoring` | Reserved for the verified middle-layer refactoring. |
 | `after-mcp` | Reserved for the completed, verified MCP-enabled version. This tag does not exist yet. |
 
 The `before-mcp` tag is the permanent baseline. The `after-mcp` tag will only be

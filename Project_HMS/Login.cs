@@ -1,64 +1,48 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System;
 using System.Windows.Forms;
-using System.Data.SqlClient;
 
 namespace Project_HMS
 {
     public partial class Login : Form
     {
-        private DataAccess Da { get; set; }
-        public Login()
+        private readonly DesktopServices services;
+
+        public Login(DesktopServices services)
         {
+            this.services = services;
             InitializeComponent();
-            this.Da = new DataAccess();
         }
 
         private void btnLogin_Click(object sender, EventArgs e)
         {
-            string sql = "select * from login where Username = '" + this.txtUserid.Text + "' and Password = '" + this.txtPassword.Text + "';";
-            try
+            DesktopUi.Run(() =>
             {
-                DataSet ds = this.Da.ExecuteQuery(sql);
-                if(ds.Tables[0].Rows.Count == 1)
-                {
-                    MessageBox.Show("Login Valid");
-                    if(ds.Tables[0].Rows[0][3].ToString().Equals("Owner"))
-                    {
-
-                    }
-                    else
-                    {
-                        ManagerDashboard md = new ManagerDashboard();
-                        md.Visible = true;                                            
-                    }
-                    this.Visible = false;
-                }
-                else
+                var user = services.Authentication.Authenticate(txtUserid.Text, txtPassword.Text);
+                txtPassword.Clear();
+                if (user == null)
                 {
                     MessageBox.Show("Login Invalid");
-                    this.lblWrong.Visible = true;
-                    this.txtUserid.Text = "";
-                    this.txtPassword.Text = "";
-                }                
-            }
-            catch (Exception exc)
-            {
-                MessageBox.Show("Error: " + exc.Message);
-            }
-            this.Da.Sqlcon.Close();
+                    lblWrong.Visible = true;
+                    txtUserid.Clear();
+                    return;
+                }
+                if (user.Role != "Manager")
+                {
+                    MessageBox.Show("No desktop workflow is implemented for this role.");
+                    return;
+                }
+                lblWrong.Visible = false;
+                MessageBox.Show("Login Valid");
+                new ManagerDashboard(services).Show();
+                Hide();
+            });
         }
 
         private void btnClear_Click(object sender, EventArgs e)
         {
-            this.txtUserid.Text = "";
-            this.txtPassword.Text = "";
+            txtUserid.Clear();
+            txtPassword.Clear();
+            lblWrong.Visible = false;
         }
     }
 }

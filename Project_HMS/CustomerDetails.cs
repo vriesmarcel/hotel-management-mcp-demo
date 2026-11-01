@@ -1,104 +1,73 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
+using System;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Data.SqlClient;
+using Hotel.Contracts;
 
 namespace Project_HMS
 {
     public partial class CustomerDetails : Form
     {
-        private DataAccess Da { get; set; }
+        private readonly DesktopServices services;
+        private string originalNationalId;
 
-        public CustomerDetails()
+        public CustomerDetails(DesktopServices services)
         {
+            this.services = services;
             InitializeComponent();
-            this.Da = new DataAccess();
-            this.PopulateGridView();
+            PopulateGridView();
         }
 
-        private void PopulateGridView(string sql = "select * from Booking;")
+        private void PopulateGridView()
         {
-            try
+            DesktopUi.Run(() =>
             {
-                DataSet ds1 = this.Da.ExecuteQuery(sql);
-                this.dgvCustomer.AutoGenerateColumns = false;
-                this.dgvCustomer.DataSource = ds1.Tables[0];
-            }
-            catch (Exception exc)
-            {
-                MessageBox.Show("Error: " + exc.Message);
-            }
+                dgvCustomer.AutoGenerateColumns = false;
+                dgvCustomer.DataSource = services.Customers.GetCustomers().ToList();
+            });
         }
 
         private void btnUpdate_Click(object sender, EventArgs e)
         {
-            try
+            DesktopUi.Run(() =>
             {
-                if (String.IsNullOrEmpty(this.txtCName.Text) || String.IsNullOrEmpty(this.txtAdd.Text) || String.IsNullOrEmpty(this.txtNID.Text) || String.IsNullOrEmpty(this.txtPhone.Text) )
+                var count = services.Customers.UpdateGuest(originalNationalId ?? txtNID.Text, new GuestDetails
                 {
-                    MessageBox.Show("To Update please fill all the information.");
-                    return;
-                }
-                string query = "update Booking set CName = '" + this.txtCName.Text + "', CPhone = '" + this.txtPhone.Text + "', CAdd = '" + this.txtAdd.Text + "', CNID = '" + this.txtNID.Text + "' where CNID = " + this.txtNID.Text + ";";
-
-                int count = this.Da.ExecuteDML(query);
-
-                if (count == 1)
-                {
-                    MessageBox.Show("Customer Info Updated Successfully.");
-                }
-                else
-                {
-                    MessageBox.Show("Customer Upgradation Failed.");
-                }
-
-                this.PopulateGridView();
-                this.ClearContent();
-            }
-            catch (Exception exc)
-            {
-                MessageBox.Show("Error: " + exc.Message);
-            }
-
+                    Name = txtCName.Text, Address = txtAdd.Text, Phone = txtPhone.Text, NationalId = txtNID.Text
+                });
+                MessageBox.Show("Customer info updated in " + count + " reservation(s).");
+                PopulateGridView();
+                ClearContent();
+            });
         }
 
-        private void btnClear_Click(object sender, EventArgs e)
-        {
-            this.ClearContent();
-        }
+        private void btnClear_Click(object sender, EventArgs e) => ClearContent();
 
         private void dgvCustomer_DoubleClick(object sender, EventArgs e)
         {
-            this.txtCName.Text = this.dgvCustomer.CurrentRow.Cells["CName"].Value.ToString();
-            this.txtPhone.Text = this.dgvCustomer.CurrentRow.Cells["CPhone"].Value.ToString();
-            this.txtAdd.Text = this.dgvCustomer.CurrentRow.Cells["CAdd"].Value.ToString();
-            this.txtNID.Text = this.dgvCustomer.CurrentRow.Cells["CNID"].Value.ToString();
+            var booking = dgvCustomer.CurrentRow?.DataBoundItem as Booking;
+            if (booking == null) return;
+            originalNationalId = booking.CNID;
+            txtCName.Text = booking.CName;
+            txtPhone.Text = booking.CPhone;
+            txtAdd.Text = booking.CAdd;
+            txtNID.Text = booking.CNID;
         }
 
         private void ClearContent()
         {
-            this.txtCName.Text = "";
-            this.txtPhone.Text = "";
-            this.txtAdd.Text = "";
-            this.txtNID.Text = "";
+            originalNationalId = null;
+            txtCName.Clear();
+            txtPhone.Clear();
+            txtAdd.Clear();
+            txtNID.Clear();
         }
 
-        private void CustomerDetails_FormClosed(object sender, FormClosedEventArgs e)
-        {
-            Application.Exit();
-        }
+        private void CustomerDetails_FormClosed(object sender, FormClosedEventArgs e) => Application.Exit();
 
         private void btnBack_Click(object sender, EventArgs e)
         {
-            ManagerDashboard md = new ManagerDashboard();
-            md.Visible = true;
-            this.Visible = false;
+            new ManagerDashboard(services).Show();
+            Hide();
         }
     }
 }

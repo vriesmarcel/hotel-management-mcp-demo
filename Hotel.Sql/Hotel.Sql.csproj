@@ -1,0 +1,32 @@
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" />
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <ProjectGuid>{7B290B3B-A707-412D-A893-F59F2E091FD7}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Hotel.Sql</RootNamespace>
+    <AssemblyName>Hotel.Sql</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <DebugSymbols Condition="'$(Configuration)' == 'Debug'">true</DebugSymbols>
+    <Optimize Condition="'$(Configuration)' == 'Release'">true</Optimize>
+    <Deterministic>true</Deterministic>
+    <DefineConstants>TRACE</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Compile Include="SqlHotelStore.cs" />
+    <ProjectReference Include="..\Hotel.Contracts\Hotel.Contracts.csproj">
+      <Project>{C4121775-363B-4DD6-9B8A-9D409A26371E}</Project>
+      <Name>Hotel.Contracts</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Hotel.Application\Hotel.Application.csproj">
+      <Project>{9DBA542B-0FE0-49D4-9ECC-F5243210D5C9}</Project>
+      <Name>Hotel.Application</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

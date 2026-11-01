@@ -1,24 +1,31 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Data.SqlClient;
+using Hotel.Contracts;
 
 namespace Project_HMS
 {
     public partial class BillHistory : Form
     {
-        private DataAccess Da { get; set; }
+        private readonly DesktopServices services;
+        private int? selectedBookingId;
 
-        public BillHistory()
+        public BillHistory(DesktopServices services)
         {
+            this.services = services;
             InitializeComponent();
-            this.Da = new DataAccess();
+            txtBId.ReadOnly = true;
+            txtRId.ReadOnly = true;
+            txtCName.ReadOnly = true;
+            txtPhone.ReadOnly = true;
+            txtTotal.ReadOnly = true;
+            txtAdvance.ReadOnly = true;
+            txtRemaining.ReadOnly = true;
+            txtReturn.ReadOnly = true;
+            dtpCheckIn.Enabled = false;
+            dtpCheckOut.Enabled = false;
+            txtNPaid.TextChanged += (sender, e) => txtReturn.Clear();
             this.PopulateGridView();
         }
 
@@ -26,10 +33,8 @@ namespace Project_HMS
         {
             try
             {
-                string sql = "select * from Booking;";
-                DataSet ds1 = this.Da.ExecuteQuery(sql);
                 this.dgvBooking.AutoGenerateColumns = false;
-                this.dgvBooking.DataSource = ds1.Tables[0];
+                this.dgvBooking.DataSource = services.Billing.GetBills().ToList();
             }
             catch (Exception exc)
             {
@@ -44,28 +49,28 @@ namespace Project_HMS
 
         private void dgvBooking_DoubleClick(object sender, EventArgs e)
         {
-            this.txtBId.Text = this.dgvBooking.CurrentRow.Cells["BId"].Value.ToString();
-            this.txtRId.Text = this.dgvBooking.CurrentRow.Cells["RId"].Value.ToString();
-            this.txtCName.Text = this.dgvBooking.CurrentRow.Cells["CName"].Value.ToString();
-            this.txtPhone.Text = this.dgvBooking.CurrentRow.Cells["CPhone"].Value.ToString();
-            this.dtpCheckIn.Text = this.dgvBooking.CurrentRow.Cells["CheckIn"].Value.ToString();
-            this.dtpCheckOut.Text = this.dgvBooking.CurrentRow.Cells["CheckOut"].Value.ToString();
-            this.txtAdvance.Text = this.dgvBooking.CurrentRow.Cells["Advance"].Value.ToString();
-            this.txtRemaining.Text = this.dgvBooking.CurrentRow.Cells["Remaining"].Value.ToString();
-            this.txtTotal.Text = this.dgvBooking.CurrentRow.Cells["Total"].Value.ToString();
+            var booking = dgvBooking.CurrentRow?.DataBoundItem as Booking;
+            if (booking == null) return;
+            selectedBookingId = booking.BId;
+            txtBId.Text = booking.BId.ToString();
+            txtRId.Text = booking.RId.ToString();
+            txtCName.Text = booking.CName;
+            txtPhone.Text = booking.CPhone;
+            dtpCheckIn.Value = booking.CheckIn;
+            dtpCheckOut.Value = booking.CheckOut;
+            txtAdvance.Text = booking.Advance.ToString();
+            txtRemaining.Text = booking.Remaining.ToString();
+            txtTotal.Text = booking.Total.ToString();
+            txtNPaid.Clear();
+            txtReturn.Clear();
         }
 
         private void btnCalculate_Click(object sender, EventArgs e)
         {
             try
             {
-                double rv = 0;
-                string remain = this.txtRemaining.Text;
-                var R = Convert.ToDouble(remain);
-                string npay = this.txtNPaid.Text;
-                var N = Convert.ToDouble(npay);
-                rv = N - R;
-                txtReturn.Text = Convert.ToString(rv);
+                if (!selectedBookingId.HasValue) throw new HotelValidationException("Select a bill first.");
+                txtReturn.Text = services.Billing.CalculateChange(selectedBookingId.Value, decimal.Parse(txtNPaid.Text)).ToString();
             }
             catch (Exception exc)
             {
@@ -81,7 +86,7 @@ namespace Project_HMS
                 int x = 100, y = 100; //start position
 
                 //Image newImage = Image.FromFile("logo.png");
-                int width = 80, height = 50;
+                int height = 50;
                 //int ix = x, iy = y; //image position
                 //e.Graphics.DrawImage(newImage, ix, iy, width, height);
 
@@ -115,40 +120,23 @@ namespace Project_HMS
 
         private void btnPrint_Click(object sender, EventArgs e)
         {
-            printPreviewDialog1.Document = printDocument1;
-            printPreviewDialog1.ShowDialog();
+            DesktopUi.Run(() =>
+            {
+                if (!selectedBookingId.HasValue) throw new HotelValidationException("Select a bill first.");
+                txtReturn.Text = services.Billing.CalculateChange(selectedBookingId.Value, decimal.Parse(txtNPaid.Text)).ToString();
+                printPreviewDialog1.Document = printDocument1;
+                printPreviewDialog1.ShowDialog();
+            });
         }
 
         private void btnUpdate_Click(object sender, EventArgs e)
         {
             try
             {
-                //Update In Room Table
-                string update = "UPDATE Room SET IsBooked = 'No' WHERE RId = " + this.txtRId.Text + "";
-                int count1 = this.Da.ExecuteDML(update);
-
-                if (count1 == 1)
-                {
-                    MessageBox.Show("Data Updated In Room Table Successfully.");                   
-                }
-                else
-                {
-                    MessageBox.Show("Data Upgradation Failed In Room Table.");
-                }
-
-                //Update In Booking Table
-                string update1 = "UPDATE Booking SET Advance = "+this.txtTotal.Text+", Remaining = "+0+" WHERE BId = " + this.txtBId.Text + "";
-                int count2 = this.Da.ExecuteDML(update1);
-
-                if (count2 == 1)
-                {
-                    MessageBox.Show("Data Updated In Booking Table Successfully.");
-                    this.PopulateGridView();
-                }
-                else
-                {
-                    MessageBox.Show("Data Upgradation Failed In Booking Table.");
-                }
+                if (!selectedBookingId.HasValue) throw new HotelValidationException("Select a bill first.");
+                var receipt = services.Billing.CompleteCheckout(selectedBookingId.Value, decimal.Parse(txtNPaid.Text));
+                MessageBox.Show("Booking settled and room released successfully. Returned amount: " + receipt.Change);
+                this.PopulateGridView();
                 this.ClearContent();
             }
             catch (Exception exc)
@@ -159,9 +147,11 @@ namespace Project_HMS
 
         private void ClearContent()
         {
+            selectedBookingId = null;
             this.txtBId.Text = "";
             this.txtRId.Text = "";
             this.dtpCheckIn.Text = "";
+            this.dtpCheckOut.Text = "";
             this.txtCName.Text = "";
             this.txtPhone.Text = "";
             this.txtTotal.Text = "";
@@ -173,7 +163,7 @@ namespace Project_HMS
 
         private void btnBack_Click(object sender, EventArgs e)
         {
-            ManagerDashboard md = new ManagerDashboard();
+            ManagerDashboard md = new ManagerDashboard(services);
             md.Visible = true;
             this.Visible = false;
         }

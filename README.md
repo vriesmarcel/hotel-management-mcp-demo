@@ -7,8 +7,10 @@ capabilities to an existing C# Windows Forms hotel management application.
 
 See the [Architecture Decision Records](docs/adr/README.md), starting with
 [ADR 0001: Shared hotel application layer for Windows Forms and MCP](docs/adr/0001-shared-hotel-application-layer-and-mcp.md).
-The ADR describes the intended refactoring and future MCP integration; it does
-not represent implemented functionality.
+The first middle-layer extraction is now implemented in `Hotel.Contracts`,
+`Hotel.Application`, and `Hotel.Sql`, with all desktop forms using typed
+services. See [refactoring, configuration, schema and verification details](docs/middle-layer-refactoring.md).
+MCP, OAuth, and future date-range booking capabilities remain unimplemented.
 
 ## Presentation versions
 
@@ -36,7 +38,20 @@ git clone --branch after-mcp https://github.com/vriesmarcel/hotel-management-mcp
 git diff before-mcp after-mcp
 ```
 
-## Baseline prerequisites
+## Running the refactored desktop application
+
+Use the .NET Framework 4.8 Windows desktop development workload.
+Supply `HMS_CONNECTION_STRING` securely outside source control and explicitly
+apply `database\001-id-sequences.sql` to the intended database before creating
+records. The migration has only been exercised in isolated validation databases,
+not applied to the shared live database. See the
+[configuration and migration instructions](docs/middle-layer-refactoring.md#local-configuration-and-migration).
+
+Run `scripts\Test-Refactoring.ps1` for boundary, application, isolated SQL,
+and automated desktop workflow validation. It never writes hotel data to the
+shared database.
+
+## Baseline prerequisites (`before-mcp` only)
 
 Open `Project_HMS.sln` in Visual Studio with .NET Framework 4.8 development
 support and the Windows desktop development workload.

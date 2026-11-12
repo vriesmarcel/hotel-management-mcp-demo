@@ -60,7 +60,15 @@ try {
     if (-not $json.result.structuredContent -or $json.result.isError) { throw 'Desktop MCP did not return SQL availability.' }
     Write-Output "PASS: Project_HMS.exe (PID $($app.Id)) served GetAvailableRooms from the live database."
     # Process.MainWindowHandle omits hidden windows, so address only this PID's titled login.
-    if (-not [HotelDemoWindow]::Close($app) -or -not $app.WaitForExit(10000)) { throw 'Desktop did not close gracefully.' }
+    # The listener starts before Login's SQL connection and window creation complete.
+    # Wait for this owned window rather than treating fast MCP readiness as UI readiness.
+    $closeSent = $false
+    for ($attempt=0; $attempt -lt 50 -and -not $closeSent; $attempt++) {
+        $app.Refresh()
+        $closeSent = [HotelDemoWindow]::Close($app)
+        if (-not $closeSent) { Start-Sleep -Milliseconds 200 }
+    }
+    if (-not $closeSent -or -not $app.WaitForExit(10000)) { throw 'Desktop did not close gracefully.' }
     $socket = [Net.Sockets.TcpClient]::new()
     try {
         try { $socket.Connect('127.0.0.1',5057) } catch [Net.Sockets.SocketException] { }

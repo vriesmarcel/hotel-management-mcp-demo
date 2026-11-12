@@ -113,12 +113,17 @@ try {
     $migration = Get-Content (Join-Path $root 'database\001-id-sequences.sql') -Raw
     Execute-Sql $target $migration
     Execute-Sql $target $migration
+    $termsMigration = Get-Content (Join-Path $root 'database\003-reservation-terms.sql') -Raw
     $workflowMigration = Get-Content (Join-Path $root 'database\002-booking-workflows.sql') -Raw
     Execute-Sql $target $workflowMigration
     Execute-Sql $target $workflowMigration
+    Execute-Sql $target $termsMigration
+    Execute-Sql $target $termsMigration
     $env:HMS_TEST_CONNECTION_STRING = $builder.ConnectionString
     $env:HMS_TEST_DATABASE_MARKER = $marker
     $testProcess = Start-Process -FilePath $testExe -ArgumentList '--integration' -NoNewWindow -PassThru
+    # Cache the process handle before waiting so Windows PowerShell retains ExitCode.
+    $null = $testProcess.Handle
     if (-not $testProcess.WaitForExit(120000)) {
         Stop-Process -Id $testProcess.Id
         $testProcess.WaitForExit()

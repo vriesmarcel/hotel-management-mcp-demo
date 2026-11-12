@@ -15,6 +15,7 @@ namespace Hotel.Application
         {
             var booking = s.GetBooking(id) ?? throw new HotelNotFoundException("Reservation was not found.");
             booking.Status = Data(s).GetStatus(id);
+            booking.Cancellation = Data(s).GetCancellation(id);
             return booking;
         }
         public static string Key(string context, string requestId, bool confirmed)

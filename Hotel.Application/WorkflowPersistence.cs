@@ -8,6 +8,8 @@ namespace Hotel.Application
         void SetStatus(int bookingId, string status);
         void SaveQuote(Quote quote);
         Quote GetQuote(string quoteId);
+        CancellationTerms GetCancellation(int bookingId);
+        void AcceptCancellation(string quoteId, int bookingId);
         OperationRecord GetOperation(string operationId);
         void SaveOperation(string operationId, OperationRecord operation);
         void AddPayment(int bookingId, decimal amount);

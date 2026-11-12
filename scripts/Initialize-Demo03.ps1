@@ -46,7 +46,7 @@ IF NOT EXISTS(SELECT 1 FROM dbo.FoodPackage WHERE FId=0) INSERT dbo.FoodPackage 
 IF NOT EXISTS(SELECT 1 FROM dbo.ServicePackage WHERE SId=0) INSERT dbo.ServicePackage VALUES(0,N'None',0);
 INSERT dbo.Login(UId,Username,Password,Role) VALUES(1,N'demo-manager',N'123456',N'Manager');
 '@
-    foreach ($migration in @('001-id-sequences.sql','002-booking-workflows.sql')) { Execute $target (Get-Content (Join-Path $root "database/$migration") -Raw) }
+    foreach ($migration in @('001-id-sequences.sql','002-booking-workflows.sql','003-reservation-terms.sql')) { Execute $target (Get-Content (Join-Path $root "database/$migration") -Raw) }
     if ((Fingerprint $source) -ne $before) { throw 'Source fingerprint changed; check for external writers.' }
     $desktop=[xml]'<connectionStrings><add name="HotelDatabase" providerName="Microsoft.Data.SqlClient" /></connectionStrings>'
     $desktop.connectionStrings.add.SetAttribute('connectionString',$builder.ConnectionString)

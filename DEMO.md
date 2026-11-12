@@ -64,3 +64,12 @@ Stop both processes, rerun `Initialize-Demo03.ps1` with the original Demo 02 loc
 The next presentation step can add MCP Apps UI to the Reservations endpoint. This branch prepares the quote/confirm/book workflow but does not implement that UI yet.
 
 To switch Codex registrations automatically (Python 3.11+): `python scripts/Configure-Codex.py --demo 3`. Use `--demo 2` to restore the original Reservations URL and disable the other two registrations. The helper backs up the config and validates that unrelated settings are unchanged. Static headers and timeouts follow the [official Codex MCP configuration](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
+
+
+## Shared room resources and cancellation terms
+
+Reservations exposes `hotel://room-types`, the template `hotel://room-types/{category}`, and `hotel://policies/cancellation/v1`. Family capacity is five; single/king bed lengths are 200 cm and queen 190 cm. Other capacities and individual room bed configurations are unspecified. Availability includes the same reference data for clients without resource reads. Resources are application-controlled context, not automatically read by the model.
+
+Quotes now return `cancellation`: policy URI/version, 15:00 Europe/Berlin check-in, exact free-cancellation deadline and one-night room fee excluding packages. Free cancellation includes the deadline exactly; 48 hours are elapsed hours, accounting for DST. Example arrival 2026-11-18: free through 2026-11-16 15:00 +01:00. Booking confirmation includes these terms, and SQL preserves the accepted snapshot. Existing bookings have no invented/backfilled policy. No cancellation tool or money transfer is implemented.
+
+Before starting this updated host against an existing synthetic rehearsal database, run `powershell -File scripts/Update-DemoDatabase.ps1`. This only adds the terms table after checking the demo database marker. Fresh initialization and isolated tests include migration 003 automatically. Do not rerun Initialize-Demo03 just to upgrade an existing demo database. The same migration is idempotent across Demo 03, 03a and 04.

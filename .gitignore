@@ -14,3 +14,4 @@ appsettings.*.Local.json
 *.mdf
 *.ldf
 ConnectionStrings.local.config
+.demo-logs/

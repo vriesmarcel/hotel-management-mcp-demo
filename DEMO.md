@@ -1,110 +1,66 @@
-# Demo 02 — add MCP without refactoring
+# Demo 03 presenter walkthrough
 
-Branch: `demo-02-no-refactor`.
-Local solution: `C:\source\hotel-management-mcp-demo-worktrees\demo-02-no-refactor\Project_HMS.sln`.
+## Prepare
 
-## Before presenting
+1. Keep the `demo-02-no-refactor` checkout available for the first demo.
+2. Open this branch's `Project_HMS.sln` in Visual Studio 2026. Its working folder is `C:\source\hotel-management-mcp-demo-worktrees\demo-03-dotnet10-contexts`.
+3. Run `scripts/Initialize-Demo03.ps1` once as described in README, unless the two local configuration files already exist.
+4. Set `Project_HMS` and `Hotel.Mcp.Host` as multiple startup projects. Stop Demo 02 before F5.
+5. Configure the three MCP registrations from `config/codex-mcp.example.toml`. Demo authentication is `Bearer 123456` on all routes; no token environment variable is needed.
+6. Break in `ReservationTools.GetAvailableRooms`, `ReservationsService.CreateReservation`, `StaysService.CheckIn`, or `BillingService.RecordPayment` depending on the segment. Tool timeout is 300 seconds.
 
-1. Close any other hotel demo so port 5057 is free.
-2. Open this solution in Visual Studio normally. Set `Project_HMS` as the
-   startup project and choose Debug.
-3. On this machine the ignored database configuration is already prepared.
-   On another machine run `scripts\Configure-Database.ps1` once. It asks for
-   the SQL password and saves only `Project_HMS\ConnectionStrings.local.config`.
-   Rebuild after creating/changing it. The file is copied beside the executable.
-4. Set a breakpoint at `var arrival = ParseDate(checkIn);` inside
-   `Project_HMS\Mcp\AvailabilityTools.cs`, then press F5.
-5. The login window title shows the endpoint and PID. No WinForms login is
-   required for the availability demonstration.
+## Tell the refactoring story
 
-The MCP host always starts on this branch. It does not read `HMS_MCP_ENABLED`
-or `HMS_MCP_TOKEN`. SQL can still use `HMS_CONNECTION_STRING` as an optional
-override, but normally reads the local config file. No special launch shell
-is required for Visual Studio or Codex.
+Start with the working Demo 02 code: it already speaks MCP. Explain that extraction is now a choice to support a second frontend and independent process lifetime.
 
-## Codex configuration
+Show the solution projects. WinForms targets .NET Framework 4.8; Contracts and Application target .NET Standard 2.0; SQL targets net48 and net10.0; MCP Host targets .NET 10. Neither frontend contains business SQL. `Program.cs` composes the desktop services. The host uses `AddMcpServer().WithHttpTransport(...)` and three `MapMcp` routes.
 
-The presenter's Codex configuration has already been updated. For another
-installation, merge the following section into the Codex config, preserving
-other settings. Remove `bearer_token_env_var` from this server if present:
+Show `ContextCatalogs.cs`: each route receives only its own tools, resources and prompts. These are logical bounded contexts sharing one host/database for the demo, not independently deployed services or authorization scopes.
 
-```toml
-[mcp_servers.hotel_reservations]
-url = "http://127.0.0.1:5057/mcp/"
-http_headers = { Authorization = "Bearer 123456" }
-enabled_tools = ["GetAvailableRooms"]
-startup_timeout_sec = 20
-tool_timeout_sec = 300
-```
+## Availability and reservation
 
-Restart the hotel MCP connection after changing configuration. If the current
-chat retains an older tool catalog, begin a new chat after the connection is
-ready. A full desktop relaunch no longer needs to inherit any token variable.
-Static HTTP headers are supported by the [official Codex MCP configuration](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
+In Codex:
 
-## On stage
+> Use GetAvailableRooms to check rooms available from November 18 to November 21, 2026. Show room IDs, categories and nightly rates.
 
-1. Start with `demo-01-baseline` and the hotel MCP connection disabled. Show
-   the application's direct `DataAccess` usage and inline SQL. In a separate
-   presentation chat without repository/SQL access, ask for real hotel availability.
-2. Close the baseline. Open this solution and show the small addition in
-   `Program.cs`: construct one tool, start the embedded host, run the existing
-   login form. The existing forms and database access architecture are unchanged.
-3. Press F5 and enable/restart the hotel MCP connection in Codex.
-4. Ask: **Use GetAvailableRooms for November 18–21, 2026. Show room IDs,
-   categories and nightly rates. Do not book anything.**
-5. At the breakpoint inspect `checkIn` and `checkOut`. Point to
-   `[McpServerTool]` and the parameter descriptions, then show
-   `new DataAccess()` and the parameterized SQL query.
-6. Say: **“We added an entry point. We did not need to refactor the application
-   or upgrade .NET Framework to make it speak MCP.”**
-7. Press F5 and return to Codex to show the live results.
+At the breakpoint, inspect `checkIn`/`checkOut`, then step into ReservationsService and the SQL adapter. Continue to return results.
 
-Both Codex's tool timeout and the server timeout while a debugger is attached
-are five minutes. The normal server deadline is 30 seconds. Explain the code
-at the first breakpoint, before SQL executes. Pausing stops the application
-process; the UI will pause too while the debugger is stopped.
+> Read the reservation policy and list packages. Calculate a quote for room [ID] for November 18–21, with no food or service package and no advance. Do not book yet.
 
-## What changed from the baseline
+Show the quote ID, authoritative total and 15-minute expiry. Demonstrate how `hotel://reservation-policy` describes data/rules and `PlanReservation` provides a reusable planning prompt. A client's resource/prompt UI may differ; the HTTP tests exercise both directly.
 
-- Added `ModelContextProtocol.Core` 2.4.0, bindings, and two files under `Mcp`.
-- `Program.cs` starts/stops the MCP host inside the existing WinForms process.
-- `AvailabilityTools.GetAvailableRooms` directly uses the original `DataAccess`.
-- `DataAccess` gains a local configuration fallback for convenient F5 startup.
-- No existing form, business workflow, database schema, or service layer was
-  rewritten. The solution still contains only the original application project.
+> I confirm that quoted stay and total. Book it for Demo Guest, address Demo Street, phone DEMO-PHONE, national ID DEMO-GUEST, with no advance. Use a new request UUID and confirmed=true.
 
-The HTTP adapter is prebuilt infrastructure for the presentation. The official
-SDK handles tool discovery, schemas, dispatch and results. Moving to modern
-ASP.NET Core later can replace that adapter with the ASP.NET Core MCP package;
-extracting services can then be presented as a design improvement.
+Show the reservation ID and `Reserved` status. Open WinForms using `demo-manager` / `123456` and inspect Customer Details or Bill History. The room remains physically unoccupied until check-in.
 
-## Deliberate demo choices
+## Stay Operations
 
-The hard-coded token `123456` is public demonstration data, not real security.
-The listener stays at `127.0.0.1` and exposes only read-only availability.
-Real identity, authorization and remote hosting belong in the later section.
+The November 18 reservation cannot be checked in before November 18. For this segment, create a separate reservation **starting today and ending tomorrow**, using an available room and the same synthetic guest process.
 
-Dates are hotel-local, arrival-inclusive/departure-exclusive, for 1–365 nights.
-Bookings overlap when `CheckIn < departure AND CheckOut > arrival`. Adjacent
-stays are permitted. Invalid booking intervals or inconsistent active occupancy
-conservatively exclude rooms. The schema records no cancellation status or
-currency, and the tool returns no guest details. Availability is not a hold.
+> Use the Stay Operations endpoint to list today's arrivals. Check in reservation [ID] after my confirmation.
 
-## Verification
+Confirm explicitly when prompted. Show `CheckIn` is in Stay Operations, and does not appear in Reservations. In WinForms, the dashboard's **Arrivals / Check-in** button uses the same service. Refresh room management to show occupied status.
 
-Run `scripts\Test-Mcp.ps1`. It builds an independent smoke-test executable,
-uses the official client against both supported protocol versions, checks date
-validation and token rejection, and performs read-only queries against the
-configured database. It then starts the real app with all HMS environment
-variables cleared, calls the endpoint, closes the login normally, and checks
-that the listener stops. It does not modify hotel records.
+## Billing
 
-Verified on 2026-11-12: 20 smoke assertions and real application startup,
-availability and shutdown passed. The pre-existing unused `width` compiler
-warning in `BillHistory.cs` remains in this deliberately unchanged baseline.
+> Use Billing to show the bill for reservation [ID]. Do not record a payment yet.
 
-If startup reports URL access denied, a Windows administrator can reserve
-`http://127.0.0.1:5057/mcp/` for the presenting account with `netsh http add urlacl`.
-No firewall rule is needed for the ordinary local demo. A browser GET is not
-an MCP call and will return an authentication/method error.
+> I confirm a demo payment of [AMOUNT LESS THAN BALANCE]. Record it using a new request UUID. No real money should move.
+
+Show the SQL operation receipt and reduced balance. Retry with the same UUID and identical details to show that the balance does not change again.
+
+> I confirm checkout for reservation [ID], paying its remaining balance now. Use a new request UUID.
+
+Show `CheckedOut`, zero balance and the room becoming free. Explain that future payment-provider integration belongs inside Billing, behind the same application boundary.
+
+## Process independence
+
+Close WinForms while leaving the host running and ask for availability again. If Visual Studio's Stop button terminates both startup projects, instead run the host alone under F5 and start WinForms separately. Closing WinForms then affects only its own process.
+
+## Reset for rehearsal
+
+Stop both processes, rerun `Initialize-Demo03.ps1` with the original Demo 02 local config, rebuild, and F5. It provisions a fresh demo database and changes only the ignored connection files. Old rehearsal databases remain available for manual inspection/removal.
+
+The next presentation step can add MCP Apps UI to the Reservations endpoint. This branch prepares the quote/confirm/book workflow but does not implement that UI yet.
+
+To switch Codex registrations automatically (Python 3.11+): `python scripts/Configure-Codex.py --demo 3`. Use `--demo 2` to restore the original Reservations URL and disable the other two registrations. The helper backs up the config and validates that unrelated settings are unchanged. Static headers and timeouts follow the [official Codex MCP configuration](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).

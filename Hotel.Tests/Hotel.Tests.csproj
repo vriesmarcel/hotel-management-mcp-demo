@@ -1,0 +1,45 @@
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" />
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <ProjectGuid>{BE5B85DC-C326-457D-8560-9B46D5F9F689}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Hotel.Tests</RootNamespace>
+    <AssemblyName>Hotel.Tests</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <DebugSymbols Condition="'$(Configuration)' == 'Debug'">true</DebugSymbols>
+    <Optimize Condition="'$(Configuration)' == 'Release'">true</Optimize>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Compile Include="Program.cs" />
+    <Compile Include="DesktopTests.cs" />
+    <Compile Include="WorkflowTests.cs" />
+    <ProjectReference Include="..\Hotel.Contracts\Hotel.Contracts.csproj">
+      <Project>{C4121775-363B-4DD6-9B8A-9D409A26371E}</Project>
+      <Name>Hotel.Contracts</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Hotel.Application\Hotel.Application.csproj">
+      <Project>{9DBA542B-0FE0-49D4-9ECC-F5243210D5C9}</Project>
+      <Name>Hotel.Application</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Hotel.Sql\Hotel.Sql.csproj">
+      <Project>{7B290B3B-A707-412D-A893-F59F2E091FD7}</Project>
+      <Name>Hotel.Sql</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Project_HMS\Project_HMS.csproj">
+      <Project>{E9CDB10E-FE16-4F19-BC9C-15F35AC138FD}</Project>
+      <Name>Project_HMS</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

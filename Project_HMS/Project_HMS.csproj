@@ -9,7 +9,6 @@
     <RootNamespace>Project_HMS</RootNamespace>
     <AssemblyName>Project_HMS</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <LangVersion>latest</LangVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
@@ -38,13 +37,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.Configuration" />
-    <Reference Include="System.Net.Http" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
     <Reference Include="System.Deployment" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Net.Http" />
@@ -70,7 +66,7 @@
     <Compile Include="CustomerDetails.Designer.cs">
       <DependentUpon>CustomerDetails.cs</DependentUpon>
     </Compile>
-    <Compile Include="DataAccess.cs" />
+    <Compile Include="DesktopServices.cs" />
     <Compile Include="ExtraService.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -102,6 +98,7 @@
       <DependentUpon>Reservation.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
+    <Compile Include="StayOperations.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="AddRoom.resx">
       <DependentUpon>AddRoom.cs</DependentUpon>
@@ -148,13 +145,22 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="App.config" /><PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
     <None Include="ConnectionStrings.local.config" Condition="Exists('ConnectionStrings.local.config')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <Compile Include="Mcp\EmbeddedMcpHost.cs" />
-    <Compile Include="Mcp\AvailabilityTools.cs" />
-    <PackageReference Include="ModelContextProtocol.Core" Version="2.4.0" />
+    <ProjectReference Include="..\Hotel.Contracts\Hotel.Contracts.csproj">
+      <Project>{C4121775-363B-4DD6-9B8A-9D409A26371E}</Project>
+      <Name>Hotel.Contracts</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Hotel.Application\Hotel.Application.csproj">
+      <Project>{9DBA542B-0FE0-49D4-9ECC-F5243210D5C9}</Project>
+      <Name>Hotel.Application</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Hotel.Sql\Hotel.Sql.csproj">
+      <Project>{7B290B3B-A707-412D-A893-F59F2E091FD7}</Project>
+      <Name>Hotel.Sql</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

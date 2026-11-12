@@ -1,10 +1,8 @@
 using System;
 using System.Configuration;
-using System.Diagnostics;
-using System.Net;
 using System.Windows.Forms;
-using ModelContextProtocol.Server;
-using Project_HMS.Mcp;
+using Hotel.Application;
+using Hotel.Sql;
 
 namespace Project_HMS
 {
@@ -17,26 +15,16 @@ namespace Project_HMS
             Application.SetCompatibleTextRenderingDefault(false);
             try
             {
-                // A second entry point in the same legacy app. No service extraction.
-                var tools = new AvailabilityTools();
-                var tool = McpServerTool.Create(typeof(AvailabilityTools).GetMethod(nameof(AvailabilityTools.GetAvailableRooms)), tools);
-                using (var mcp = new EmbeddedMcpHost(tool))
-                {
-                    mcp.Activity += message => Trace.TraceInformation(message);
-                    mcp.Start();
-                    var login = new Login();
-                    login.Text += " - MCP: " + mcp.Endpoint + " (PID " + Process.GetCurrentProcess().Id + ")";
-                    Application.Run(login);
-                }
+                var connection = Environment.GetEnvironmentVariable("HMS_CONNECTION_STRING")
+                    ?? ConfigurationManager.ConnectionStrings["HotelDatabase"]?.ConnectionString;
+                if (string.IsNullOrWhiteSpace(connection)) throw new ConfigurationErrorsException("Configure HotelDatabase in ConnectionStrings.local.config.");
+                var store = new SqlHotelStore(connection);
+                var hotel = new HotelServices(store);
+                var services = new DesktopServices(hotel, hotel, new ReservationsService(store), hotel,
+                    new BillingService(store), hotel, new StaysService(store));
+                Application.Run(new Login(services));
             }
-            catch (HttpListenerException)
-            {
-                MessageBox.Show("MCP could not start. Close the other hotel demo using port 5057. See DEMO.md for URL permissions.");
-            }
-            catch (ConfigurationErrorsException)
-            {
-                MessageBox.Show("Run scripts/Configure-Database.ps1 once to configure the local database, then press F5.");
-            }
+            catch (Exception exception) { MessageBox.Show(exception.Message, "Hotel startup"); }
         }
     }
 }

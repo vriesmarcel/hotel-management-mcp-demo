@@ -65,3 +65,12 @@ Conversational rehearsal cases (these are manual acceptance cases, not automated
 | “Thanks” after success | Acknowledge; do not create another reservation |
 
 Teaching point: **MCP exposes what the application can do. The skill teaches the client how to complete the booking conversation. The plugin distributes them together.** Confirmation in a skill improves the interaction, but is not a substitute for authorization and transaction rules in the application.
+
+
+## Room resources and cancellation (plugin 1.1.0)
+
+The skill reads the room and cancellation resources when the host supports resource access, or uses the same facts included in availability. Ask “Does a Family room fit six people?” (it does not) or “How long are the queen beds?” (190 cm, with room-specific configuration unverified). The skill uses resource facts instead of guessing.
+
+Calculate a quote for November 18–21, 2026. It must show free cancellation through November 16 at 15:00 +01:00 (Europe/Berlin), then one night's room rate excluding packages. Review the exact fee and policy version before confirmation. Stop at the quote to preserve inventory for Demo 04. Existing reservations without a snapshot retain unknown historical terms.
+
+Run `scripts/Update-DemoDatabase.ps1` once for an existing synthetic rehearsal database, then restart the host. Reinstall the standalone skill or restage the plugin with `scripts/Install-BookingSkill.py`; do not enable duplicate server registrations. The helper commands `room-info` and `cancellation-policy` perform resource reads only.

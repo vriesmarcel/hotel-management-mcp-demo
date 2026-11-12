@@ -60,6 +60,14 @@ static class Program
             await using var client = await McpClient.CreateAsync(transport, new McpClientOptions { ProtocolVersion = version });
             var tools = await client.ListToolsAsync();
             Check(tools.Count == 1 && tools[0].Name == "GetAvailableRooms", "One available tool.");
+            var resources = await client.ListResourcesAsync();
+            Check(resources.Any(r => r.Uri == "hotel://room-types") && resources.Any(r => r.Uri == "hotel://policies/cancellation/v1"), "Reference resources discoverable.");
+            var templates = await client.ListResourceTemplatesAsync();
+            Check(templates.Any(r => r.UriTemplate == "hotel://room-types/{category}"), "Room category template discoverable.");
+            var family = await client.ReadResourceAsync("hotel://room-types/Family");
+            Check(family.Contents.OfType<ModelContextProtocol.Protocol.TextResourceContents>().Any(r => r.Text.Contains("\"maximumGuests\":5")), "Family capacity read through MCP.");
+            var policy = await client.ReadResourceAsync("hotel://policies/cancellation/v1");
+            Check(policy.Contents.OfType<ModelContextProtocol.Protocol.TextResourceContents>().Any(r => r.Text.Contains("Europe/Berlin") && r.Text.Contains("48")), "Cancellation policy readable.");
             var result = await client.CallToolAsync("GetAvailableRooms", new Dictionary<string,object> { ["checkIn"]="2026-11-18", ["checkOut"]="2026-11-21" });
             Check(result.IsError != true && result.StructuredContent.HasValue, "Live read returned structured content.");
             Check(result.StructuredContent.Value.GetProperty("nights").GetInt32() == 3, "Three nights.");

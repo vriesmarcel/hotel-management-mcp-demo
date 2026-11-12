@@ -40,7 +40,10 @@ namespace Project_HMS
 
         public DataAccess()
         {
-            this.Sqlcon = new SqlConnection(@"Data Source=localhost;Initial Catalog=Project_HMS;Persist Security Info=True;User ID=sa;Password=REPLACE_WITH_LOCAL_PASSWORD");
+            var connectionString = Environment.GetEnvironmentVariable("HMS_CONNECTION_STRING");
+            if (string.IsNullOrWhiteSpace(connectionString))
+                throw new InvalidOperationException("Set HMS_CONNECTION_STRING or run scripts/Start-Demo.ps1.");
+            this.Sqlcon = new SqlConnection(connectionString);
             this.Sqlcon.Open();
         }
 

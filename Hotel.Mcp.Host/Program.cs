@@ -25,7 +25,7 @@ builder.Services.AddMcpServer().WithHttpTransport(options =>
     options.ConfigureSessionOptions = (http, server, cancellationToken) =>
     {
         var context = catalogs.ForPath(http.Request.Path.Value!);
-        server.ServerInfo = new Implementation { Name = context.Name, Version = "3.0.0" };
+        server.ServerInfo = new Implementation { Name = context.Name, Version = "4.0.0" };
         server.ServerInstructions = context.Instructions;
         server.ToolCollection = context.Tools;
         server.ResourceCollection = context.Resources;
@@ -48,9 +48,18 @@ app.Use(async (http, next) =>
     if (http.Request.Headers.TryGetValue("Origin", out var origin)
         && origin != $"http://127.0.0.1:{port}" && origin != $"http://localhost:{port}")
     { http.Response.StatusCode = 403; return; }
-    if (http.Request.Headers.Authorization != "Bearer 123456")
+    // Only the local reference host page is public; MCP calls still require the demo token.
+    var isPreview = HttpMethods.IsGet(http.Request.Method) && http.Request.Path == "/demo/reservations";
+    if (!isPreview && http.Request.Headers.Authorization != "Bearer 123456")
     { http.Response.StatusCode = 401; http.Response.Headers.WWWAuthenticate = "Bearer"; return; }
     await next(http);
+});
+app.MapGet("/demo/reservations", (HttpContext http) =>
+{
+    http.Response.Headers.CacheControl = "no-store";
+    http.Response.Headers.XContentTypeOptions = "nosniff";
+    http.Response.Headers["Content-Security-Policy"] = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; frame-src 'self' about:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
+    return Results.Content(ReservationApp.Preview(), "text/html; charset=utf-8");
 });
 app.MapMcp("/mcp/reservations");
 app.MapMcp("/mcp/stays");

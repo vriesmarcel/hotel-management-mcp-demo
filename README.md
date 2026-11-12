@@ -1,3 +1,5 @@
+Demo 04 adds an interactive MCP Apps room picker, quote review and confirmed booking to Reservations. See [the finale runbook](DEMO-04.md). Select the **Hotel MCP Apps (.NET 10)** launch profile and press F5 to open the local reference host.
+
 Demo 03a adds the booking skill and a local plugin bundle. See [the skill walkthrough](DEMO-03A.md). Start with `python scripts/Install-BookingSkill.py`, then invoke `$book-hotel-room` in a new chat. The .NET host and application below are unchanged.
 
 # Demo 03 — separate .NET 10 MCP host and bounded contexts

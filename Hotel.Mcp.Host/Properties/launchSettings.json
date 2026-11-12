@@ -1,5 +1,12 @@
 {
   "profiles": {
+    "Hotel MCP Apps (.NET 10)": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "demo/reservations",
+      "applicationUrl": "http://127.0.0.1:5057",
+      "environmentVariables": { "ASPNETCORE_ENVIRONMENT": "Development" }
+    },
     "Hotel MCP (.NET 10)": {
       "commandName": "Project",
       "launchBrowser": false,

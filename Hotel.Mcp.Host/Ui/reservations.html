@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>Your hotel stay</title><style>/* APP_CSS */</style></head>
+<body><main>
+  <header><div class="brand">THE DEMO HOTEL <span>RESERVATIONS</span></div><h1>A little room to unwind.</h1><p>Choose your room. Make it your stay.</p></header>
+  <div id="status" role="status" aria-live="polite">Connecting to your hotel…</div>
+  <form id="search"><fieldset id="searchFields" disabled><div class="search-grid">
+    <label>Check-in<input id="checkIn" type="date" required></label>
+    <label>Check-out<input id="checkOut" type="date" required></label>
+    <button type="button" id="find">Find rooms <span aria-hidden="true">→</span></button>
+  </div></fieldset></form>
+  <section id="availability" hidden><div class="section-heading"><h2>01 <span>Choose your room</span></h2><span id="count"></span></div>
+    <p class="muted">Nightly rates · Currency is not specified by this demo hotel.</p><div id="rooms" class="rooms" role="group" aria-label="Available rooms"></div>
+    <p id="empty" hidden>No rooms are available for this stay. Try different dates.</p>
+  </section>
+  <form id="details" hidden><fieldset id="detailFields"><section>
+    <h2>02 <span>Make yourself at home</span></h2><p id="selection" class="selection"></p>
+    <div class="two-columns"><label>Food package<select id="food"></select></label><label>Service package<select id="service"></select></label></div>
+    <p class="muted">Food is charged per night; services once per stay. Packages do not specify the number of people covered.</p>
+    <label class="advance">Advance to record<input id="advance" type="number" min="0" step="0.01" value="0" required></label>
+    <p class="muted">Demo records only. No money is transferred.</p>
+  </section><section><h2>03 <span>Who’s checking in?</span></h2><p class="muted">Please use fictional guest details for this demonstration.</p>
+    <div class="two-columns"><label>Guest name<input id="guestName" maxlength="50" required autocomplete="off"></label><label>Phone<input id="phone" maxlength="50" required autocomplete="off"></label>
+    <label>Address<input id="address" maxlength="50" required autocomplete="off"></label><label>National ID<input id="nationalId" maxlength="50" required autocomplete="off"></label></div>
+    <button type="button" id="quoteButton">Review my stay <span aria-hidden="true">→</span></button>
+  </section></fieldset></form>
+  <section id="review" class="review" hidden><div class="section-heading"><h2>Your stay, at a glance</h2><span class="pill">HOTEL QUOTE</span></div>
+    <p id="quoteStay"></p><p id="quotePackages" class="muted"></p><dl id="totals"></dl><p id="expiry" class="muted"></p>
+    <label class="confirmation"><input id="confirm" type="checkbox">I confirm this room, dates, packages, total and advance.</label>
+    <button id="book" type="button" disabled>Confirm &amp; book</button>
+  </section>
+  <section id="receipt" class="receipt" hidden><span class="success-mark" aria-hidden="true">✓</span><p class="eyebrow">YOU’RE EXPECTED</p><h2>Your room is reserved.</h2><p id="receiptDetails"></p><p id="receiptTotal"></p><p class="muted">Check-in and checkout are handled separately. We look forward to welcoming you.</p></section>
+  <footer>Availability is not a hold. Your room is secured when the hotel confirms the reservation.</footer>
+</main><script>/* APP_JS */</script></body></html>

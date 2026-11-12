@@ -3,12 +3,14 @@ using System.Globalization;
 using Hotel.Contracts;
 using ModelContextProtocol;
 using ModelContextProtocol.Server;
+using ModelContextProtocol.Extensions.Apps;
 
 namespace Hotel.Mcp.Host;
 
 internal sealed class ReservationTools(IReservations reservations, IPackageService packages)
 {
-    [McpServerTool(Name = "GetAvailableRooms", ReadOnly = true, OpenWorld = false), Description("Find rooms available for the entire date window. Check-out is exclusive; dates use yyyy-MM-dd. Returns room IDs, categories and nightly rates. Availability is not a hold.")]
+    [McpAppUi(ResourceUri = ReservationApp.ResourceUri)]
+    [McpServerTool(Name = "GetAvailableRooms", ReadOnly = true, OpenWorld = false, UseStructuredContent = true), Description("Find rooms available for the entire date window. Check-out is exclusive; dates use yyyy-MM-dd. Returns room IDs, categories and nightly rates, with an interactive room picker in MCP Apps hosts. Availability is not a hold.")]
     public AvailabilityResult GetAvailableRooms(string checkIn, string checkOut) =>
         ToolBoundary.Execute(() => reservations.GetAvailableRooms(ToolBoundary.Date(checkIn), ToolBoundary.Date(checkOut)));
 

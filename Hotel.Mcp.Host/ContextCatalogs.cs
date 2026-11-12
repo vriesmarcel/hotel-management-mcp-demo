@@ -1,6 +1,7 @@
 using System.Reflection;
 using Hotel.Contracts;
 using ModelContextProtocol.Server;
+using ModelContextProtocol.Extensions.Apps;
 
 namespace Hotel.Mcp.Host;
 
@@ -18,6 +19,8 @@ internal sealed class ContextCatalog
         foreach (var method in tools.GetType().GetMethods())
             if (method.GetCustomAttribute<McpServerToolAttribute>() != null)
                 Tools.Add(McpServerTool.Create(method, tools));
+        // These catalogs are route-specific, so apply the Apps attributes explicitly.
+        McpApps.ApplyAppUiAttributes(Tools);
     }
 }
 
@@ -31,6 +34,7 @@ internal sealed class ContextCatalogs
             new ReservationTools(reservations, packages));
         reservation.Resources.Add(McpServerResource.Create((Func<string>)ReservationGuidance.Policy,
             new McpServerResourceCreateOptions { Name = "ReservationPolicy", UriTemplate = "hotel://reservation-policy", MimeType = "text/plain" }));
+        reservation.Resources.Add(ReservationApp.CreateResource());
         reservation.Prompts.Add(McpServerPrompt.Create((Func<string, string>)ReservationGuidance.PlanReservation,
             new McpServerPromptCreateOptions { Name = "PlanReservation", Description = "Plan a hotel stay using availability, packages and a confirmed quote." }));
         contexts = new(StringComparer.OrdinalIgnoreCase)

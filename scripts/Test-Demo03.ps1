@@ -2,7 +2,8 @@ param(
     [string]$ContainerName,
     [string]$Server = 'localhost,1433',
     [string]$Configuration = 'Debug',
-    [string]$SourceConfig
+    [string]$SourceConfig,
+    [switch]$IncludeMcpUi
 )
 
 $ErrorActionPreference = 'Stop'
@@ -125,7 +126,7 @@ try {
         throw 'Isolated SQL/desktop tests timed out; stopped only the owned test process.'
     }
     if ($testProcess.ExitCode -ne 0) { throw 'SQL/desktop integration tests failed.' }
-    & (Join-Path $PSScriptRoot 'Test-ContextMcp.ps1') -Configuration $Configuration
+    & (Join-Path $PSScriptRoot 'Test-ContextMcp.ps1') -Configuration $Configuration -IncludeMcpUi:$IncludeMcpUi
     if ((Source-Fingerprint $source) -ne $before) { throw 'Source database fingerprint changed during tests; investigate external writers.' }
     Write-Output 'PASS: original database row-count/checksum fingerprint unchanged; migration applied twice in isolated compatibility-level-110 schema copy.'
 } finally {

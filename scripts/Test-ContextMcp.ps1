@@ -1,4 +1,4 @@
-param([string]$Configuration='Debug')
+param([string]$Configuration='Debug', [switch]$IncludeMcpUi)
 $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
 if (-not $env:HMS_TEST_CONNECTION_STRING -or -not $env:HMS_TEST_DATABASE_MARKER) { throw 'Run through Test-Demo03.ps1 with an owned test database.' }
@@ -52,6 +52,11 @@ try {
     }
     $resources=Rpc 'reservations' 'resources/list' @{}
     Assert ($resources.result.resources.uri -contains 'hotel://reservation-policy') 'Reservation policy missing.'
+    Assert ($resources.result.resources.uri -contains 'ui://hotel/reservations/v1') 'MCP Apps resource missing.'
+    foreach ($other in @('stays','billing')) {
+        $leak=Rpc $other 'resources/read' @{uri='ui://hotel/reservations/v1'}
+        Assert ($leak.error -or -not $leak.result.contents) 'Reservation UI leaked to another context.'
+    }
     $policy=Rpc 'reservations' 'resources/read' @{uri='hotel://reservation-policy'}
     Assert ($policy.result.contents[0].text -match '15 minutes') 'Policy unreadable.'
     $prompt=Rpc 'reservations' 'prompts/get' @{name='PlanReservation';arguments=@{requirements='A room for three nights'}}
@@ -80,6 +85,23 @@ try {
         catch { Assert ([int]$_.Exception.Response.StatusCode -in @(401,403)) 'Invalid token/origin was not rejected.' }
     }
     Write-Output "PASS: $script:checks MCP HTTP assertions; three isolated catalogs, resources/prompts, booking/check-in/payment/checkout, safe retries, token and Origin checks."
+    if ($IncludeMcpUi) {
+        # The preceding empty-table/desktop tests intentionally remove package 0.
+        # Restore the demo's explicit no-package options in this owned fixture only.
+        $fixture=New-Object System.Data.SqlClient.SqlConnection $cs.ConnectionString
+        try {
+            $fixture.Open(); $seed=$fixture.CreateCommand()
+            $seed.CommandText="IF NOT EXISTS (SELECT 1 FROM dbo.FoodPackage WHERE FId=0) INSERT dbo.FoodPackage (FId,FName,FPackageCost) VALUES (0,N'',0); IF NOT EXISTS (SELECT 1 FROM dbo.ServicePackage WHERE SId=0) INSERT dbo.ServicePackage (SId,SName,SPackageCost) VALUES (0,N'',0);"
+            [void]$seed.ExecuteNonQuery(); $seed.Dispose()
+        } finally { $fixture.Dispose() }
+        $oldUiTest=$env:HMS_UI_TEST_OWNED
+        try {
+            $env:HMS_UI_TEST_OWNED='5059'
+            Push-Location (Join-Path $root 'Hotel.Mcp.Host/Ui')
+            try { & npm.cmd test; if ($LASTEXITCODE -ne 0) { throw 'MCP Apps browser tests failed.' } }
+            finally { Pop-Location }
+        } finally { $env:HMS_UI_TEST_OWNED=$oldUiTest }
+    }
 } finally {
     if ($hostProcess -and -not $hostProcess.HasExited) { Stop-Process -Id $hostProcess.Id; $hostProcess.WaitForExit() }
     $env:HMS_CONNECTION_STRING=$oldConnection; $env:HMS_MCP_PORT=$oldPort

@@ -1,0 +1,17 @@
+{
+  "name": "hotel-reservations-mcp-app",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "playwright test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "2.0.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0",
+    "esbuild": "0.28.2"
+  }
+}

@@ -6,6 +6,7 @@
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\Demo\ReferenceResources.cs" Link="ReferenceResources.cs" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" Version="2.4.0" />
     <ProjectReference Include="..\Hotel.Application\Hotel.Application.csproj" />
     <ProjectReference Include="..\Hotel.Sql\Hotel.Sql.csproj" />

@@ -28,12 +28,18 @@ namespace Hotel.Tests
             var stay = new QuoteRequest { RoomId=room.RId,FoodPackageId=food.FId,ServicePackageId=service.SId,CheckIn=today,CheckOut=today.AddDays(3) };
             var quote = reservations.CalculateQuote(stay,18);
             Check(quote.Total==368 && quote.Remaining==350 && quote.ExpiresUtc>DateTime.UtcNow,"Persisted quote includes correct pricing and expiry.");
+            Check(quote.Cancellation.LateCancellationFee==100.25m,"Cancellation fee excludes nightly food and once-only services.");
+            var persistedQuote=store.Read(s=>((IWorkflowSession)s).GetQuote(quote.QuoteId));
+            Check(persistedQuote.Cancellation.FreeCancellationUntil==quote.Cancellation.FreeCancellationUntil && persistedQuote.Cancellation.PolicyVersion=="v1","Quoted cancellation terms round-trip through SQL.");
             var request = new ReservationRequest { QuoteId=quote.QuoteId,Guest=Guest(),Advance=18,RequestId=Guid.NewGuid().ToString(),Confirmed=false };
             Expect<HotelValidationException>(()=>reservations.CreateReservation(request));
             request.Confirmed=true;
             var booking = reservations.CreateReservation(request);
             Check(booking.Status=="Reserved" && hotel.GetRooms().Single(r=>r.RId==room.RId).IsBooked=="No","Booking does not immediately occupy a room.");
             Check(reservations.CreateReservation(request).BId==booking.BId,"Booking retry returns the same ID.");
+            var savedTerms=reservations.GetReservation(booking.BId).Cancellation;
+            Check(savedTerms.PolicyUri==quote.Cancellation.PolicyUri && savedTerms.LateCancellationFee==100.25m,"Reservation stores accepted policy version and fee.");
+            Check((int)Scalar("SELECT COUNT(*) FROM dbo.HotelCancellationTerms WHERE BId="+booking.BId)==1,"Idempotent booking has one accepted policy snapshot.");
             request.Advance=19;
             Expect<HotelConflictException>(()=>reservations.CreateReservation(request));
             request.Advance=18;
@@ -84,6 +90,9 @@ namespace Hotel.Tests
             var expired=reservations.CalculateQuote(raceStay);
             Execute("UPDATE dbo.HotelQuotes SET ExpiresUtc=DATEADD(minute,-1,SYSUTCDATETIME());");
             Expect<HotelConflictException>(()=>reservations.CreateReservation(new ReservationRequest { QuoteId=expired.QuoteId,Guest=Guest(),Confirmed=true,RequestId=Guid.NewGuid().ToString() }));
+            var oldQuote=reservations.CalculateQuote(raceStay);
+            Execute("DELETE FROM dbo.HotelCancellationTerms WHERE QuoteId='"+oldQuote.QuoteId+"';");
+            Expect<HotelConflictException>(()=>reservations.CreateReservation(new ReservationRequest { QuoteId=oldQuote.QuoteId,Guest=Guest(),Confirmed=true,RequestId=Guid.NewGuid().ToString() }));
             var changed=reservations.CalculateQuote(raceStay);
             hotel.SaveRoom(expiryRoom.RId,expiryRoom.Category,"No",41);
             Expect<HotelConflictException>(()=>reservations.CreateReservation(new ReservationRequest { QuoteId=changed.QuoteId,Guest=Guest(),Confirmed=true,RequestId=Guid.NewGuid().ToString() }));

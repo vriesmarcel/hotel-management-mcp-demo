@@ -35,6 +35,7 @@ namespace Hotel.Application
                 Workflow.Money(quote.Total);
                 if (advance > quote.Total) throw new HotelValidationException("Advance exceeds the total.");
                 quote.QuoteId = Guid.NewGuid().ToString("D"); quote.Stay = request; quote.ExpiresUtc = DateTime.UtcNow.AddMinutes(15); quote.Remaining = quote.Total - advance;
+                quote.Cancellation = CancellationRules.ForStay(request.CheckIn, s.GetRoom(request.RoomId).RoomCost);
                 Workflow.Data(s).SaveQuote(quote); return quote;
             });
         }
@@ -52,6 +53,7 @@ namespace Hotel.Application
                 var db = Workflow.Data(s); var prior = Workflow.Replay(db, key, hash);
                 if (prior != null) return Workflow.Booking(s, prior.BookingId);
                 var quote = db.GetQuote(request.QuoteId) ?? throw new HotelNotFoundException("Quote was not found.");
+                if (quote.Cancellation == null) throw new HotelConflictException("This quote predates cancellation terms; calculate and confirm a new quote.");
                 if (quote.ExpiresUtc < DateTime.UtcNow) throw new HotelConflictException("Quote expired; calculate and confirm a new quote.");
                 var stay = quote.Stay;
                 if (request.Stay != null && (request.Stay.RoomId != stay.RoomId || request.Stay.CheckIn != stay.CheckIn || request.Stay.CheckOut != stay.CheckOut || request.Stay.FoodPackageId != stay.FoodPackageId || request.Stay.ServicePackageId != stay.ServicePackageId))
@@ -60,6 +62,7 @@ namespace Hotel.Application
                 if (HotelServices.QuoteFor(s, stay).Total != quote.Total) throw new HotelConflictException("Pricing changed; calculate and confirm a new quote.");
                 if (request.Advance > quote.Total) throw new HotelValidationException("Advance exceeds the total.");
                 var b = s.InsertBooking(new Booking { RId = stay.RoomId, CheckIn = stay.CheckIn, CheckOut = stay.CheckOut, FId = stay.FoodPackageId, SId = stay.ServicePackageId, CName = request.Guest.Name, CAdd = request.Guest.Address, CPhone = request.Guest.Phone, CNID = request.Guest.NationalId, Total = quote.Total, Advance = request.Advance, Remaining = quote.Total - request.Advance });
+                db.AcceptCancellation(quote.QuoteId, b.BId); b.Cancellation = quote.Cancellation;
                 db.SetStatus(b.BId, "Reserved"); db.SaveOperation(key, new OperationRecord { PayloadHash = hash, BookingId = b.BId, Amount = request.Advance }); b.Status = "Reserved"; return b;
             });
         }

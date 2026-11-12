@@ -108,3 +108,12 @@ If startup reports URL access denied, a Windows administrator can reserve
 `http://127.0.0.1:5057/mcp/` for the presenting account with `netsh http add urlacl`.
 No firewall rule is needed for the ordinary local demo. A browser GET is not
 an MCP call and will return an authentication/method error.
+
+
+## Room and cancellation resources
+
+The embedded server also exposes `hotel://room-types`, `hotel://room-types/{category}` and `hotel://policies/cancellation/v1` through MCP resource discovery/read. Family rooms accommodate at most five guests. Single/king beds are 200 cm long and queen beds 190 cm. Bed type is not mapped to individual rooms in the legacy data; do not infer that mapping. Other category capacities remain unspecified.
+
+Cancellation is free at or before 48 elapsed hours before 15:00 Europe/Berlin check-in. Later cancellation costs one room night, excluding packages. Demo 02 only describes this policy. From Demo 03, quotes calculate the exact deadline/fee and bookings retain the accepted terms. No cancellation/payment execution is added.
+
+For clients without resource reads, availability contains `roomInformation` and `cancellationPolicy` from the same source. Resource content is not automatically placed in model context. Show `resources/list`, `resources/templates/list` and `resources/read`, or use the bundled availability context. This still uses the original WinForms/DataAccess architecture.

@@ -91,5 +91,7 @@ ORDER BY r.RId;";
         public int Nights { get; set; }
         public List<AvailableRoom> Rooms { get; set; }
         public string RateNote { get; set; }
+        public Hotel.ReferenceData.RoomInformation RoomInformation { get; set; } = Hotel.ReferenceData.HotelReferenceData.Rooms();
+        public Hotel.ReferenceData.CancellationPolicy CancellationPolicy { get; set; } = Hotel.ReferenceData.HotelReferenceData.Cancellation();
     }
 }

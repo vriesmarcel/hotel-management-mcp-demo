@@ -147,8 +147,9 @@ namespace Project_HMS.Mcp
                 {
                     ProtocolVersion = version,
                     ServerInfo = new Implementation { Name = "hotel-reservations-net48", Version = "0.2.0" },
-                    ServerInstructions = "Use hotel-local calendar dates. Availability does not reserve a room. Currency is not recorded in the legacy database.",
-                    Capabilities = new ServerCapabilities { Tools = new ToolsCapability() },
+                    ServerInstructions = "Use hotel-local calendar dates. Read hotel://room-types and hotel://policies/cancellation/v1 for hotel facts. Availability also includes this reference data for clients without resource access. Availability does not reserve a room. Currency is not recorded in the legacy database.",
+                    Capabilities = new ServerCapabilities { Tools = new ToolsCapability(), Resources = new ResourcesCapability() },
+                    ResourceCollection = Hotel.Mcp.ReferenceResources.Create(),
                     ToolCollection = new McpServerPrimitiveCollection<McpServerTool>
                     {
                         tool

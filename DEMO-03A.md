@@ -4,6 +4,8 @@ The branch `demo-03a-booking-skill` starts at the validated .NET 10 host demo. T
 
 The source is `plugins/hotel-booking/skills/book-hotel-room/SKILL.md`. It is also the skill bundled in the plugin, so there is one maintained definition.
 
+In Visual Studio, expand **Solution Items** to open the booking skill, plugin manifest, MCP connection, marketplace registration, helper and install/package scripts directly during the demo.
+
 ## Rehearse the standalone skill
 
 1. Keep the Demo 03 host running in Visual Studio on port 5057. You can use its existing checkout and database; there is no need to start a second host or reset any bookings.

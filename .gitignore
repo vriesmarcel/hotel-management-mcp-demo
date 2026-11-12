@@ -15,3 +15,6 @@ appsettings.*.Local.json
 *.ldf
 ConnectionStrings.local.config
 .demo-logs/
+
+**/__pycache__/
+*.pyc

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "hotel_reservations": {
+      "type": "http",
+      "url": "http://127.0.0.1:5057/mcp/reservations",
+      "http_headers": { "Authorization": "Bearer 123456" },
+      "startup_timeout_sec": 30,
+      "tool_timeout_sec": 300
+    }
+  }
+}

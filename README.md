@@ -1,3 +1,5 @@
+Demo 03a adds the booking skill and a local plugin bundle. See [the skill walkthrough](DEMO-03A.md). Start with `python scripts/Install-BookingSkill.py`, then invoke `$book-hotel-room` in a new chat. The .NET host and application below are unchanged.
+
 # Demo 03 — separate .NET 10 MCP host and bounded contexts
 
 This branch starts at `demo-02-no-refactor`. Demo 02 proves the legacy WinForms app can speak MCP without refactoring. Demo 03 extracts shared business operations, removes the in-process HTTP listener, and hosts MCP using `ModelContextProtocol.AspNetCore` 2.4.0 in .NET 10.

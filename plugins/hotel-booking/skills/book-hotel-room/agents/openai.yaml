@@ -1,0 +1,4 @@
+interface:
+  display_name: "Book a Hotel Room"
+  short_description: "Find rooms, confirm a quote, and book a stay"
+  default_prompt: "Use $book-hotel-room to help me find and book a room at the demo hotel."

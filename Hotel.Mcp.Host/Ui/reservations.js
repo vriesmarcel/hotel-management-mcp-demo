@@ -1,6 +1,6 @@
 import { App } from '@modelcontextprotocol/ext-apps';
 
-const app = new App({ name: 'Hotel Reservations', version: '4.0.0' }, {});
+const app = new App({ name: 'Hotel Reservations', version: '4.0.1' }, {}, { autoResize: false });
 const $ = id => document.getElementById(id);
 const money = value => Number(value).toLocaleString('en-US', { maximumFractionDigits: 2 });
 let rooms = [], selected, quote, busy = false, done = false, pending, attempts = 0, packagesReady = false;
@@ -19,6 +19,7 @@ function lock() {
   $('searchFields').disabled = busy || done || !!pending;
   $('detailFields').disabled = busy || done || !!pending;
   document.querySelectorAll('.room').forEach(x => { x.disabled = busy || done || !!pending; });
+  $('changeRoom').disabled = busy || done || !!pending;
   $('confirm').disabled = busy || done || !!pending;
   $('book').disabled = busy || done || (pending ? attempts >= 2 : !quote || !$('confirm').checked || expired());
 }
@@ -32,7 +33,7 @@ function renderAvailability(result) {
   searchDates = { checkIn: result.checkIn.slice(0, 10), checkOut: result.checkOut.slice(0, 10) };
   $('checkIn').value = searchDates.checkIn; $('checkOut').value = searchDates.checkOut;
   rooms = result.rooms; $('rooms').replaceChildren(); $('availability').hidden = false;
-  $('count').textContent = `${rooms.length} available · ${result.nights} night${result.nights === 1 ? '' : 's'}`;
+  $('count').textContent = `${rooms.length} rooms across all categories · ${result.nights} night${result.nights === 1 ? '' : 's'}`;
   $('empty').hidden = rooms.length !== 0;
   for (const room of rooms) {
     const button = document.createElement('button'); button.type = 'button'; button.className = 'room';
@@ -46,12 +47,20 @@ function renderAvailability(result) {
       selected = room; invalidate();
       document.querySelectorAll('.room').forEach(x => x.setAttribute('aria-pressed', String(x === button)));
       $('selection').textContent = `Room ${room.roomId} · ${room.category} · ${money(room.nightlyRate)} per night`;
-      $('details').hidden = false; status('Room selected. Choose your extras and enter guest details.');
+      $('availability').hidden = true;
+      $('details').hidden = false; status(`Room ${room.roomId} selected. Choose your extras and enter guest details.`);
+      $('details').scrollIntoView({ behavior: 'instant', block: 'start' });
     });
     $('rooms').append(button);
   }
   status(rooms.length ? 'Select a room to plan your stay.' : 'Try different dates to find a room.'); lock();
 }
+$('changeRoom').addEventListener('click', () => {
+  if (busy || pending || done) return;
+  invalidate(); $('details').hidden = true; $('availability').hidden = false;
+  status('Select a room to plan your stay.');
+  $('availability').scrollIntoView({ behavior: 'instant', block: 'start' });
+});
 async function loadPackages() {
   const data = await call('GetPackages', {});
   for (const [id, items, key, name, price, suffix] of [
@@ -73,7 +82,7 @@ $('find').addEventListener('click', async e => {
   if (!$('search').reportValidity()) return;
   if (dates().checkOut <= dates().checkIn) { status('Check-out must be after check-in.', true); return; }
   busy = true; invalidate(); $('details').hidden = true; $('availability').hidden = true; lock(); status('Checking availability…');
-  try { if (!packagesReady) await loadPackages(); const result = await call('GetAvailableRooms', dates()); busy = false; renderAvailability(result); }
+  try { if (!packagesReady) await loadPackages(); const result = await call('GetAvailableRooms', dates()); busy = false; renderAvailability(result); $('availability').scrollIntoView({ behavior: 'instant', block: 'start' }); }
   catch (error) { status(error.message, true); }
   finally { busy = false; lock(); }
 });
@@ -134,4 +143,8 @@ $('book').addEventListener('click', async () => {
 app.ontoolinput = ({ arguments: args }) => { if (!busy && !pending && !done && args?.checkIn && args?.checkOut) { $('checkIn').value = args.checkIn; $('checkOut').value = args.checkOut; } };
 app.ontoolresult = result => { try { renderAvailability(unpack(result)); } catch (error) { status(error.message, true); } };
 app.onhostcontextchanged = () => {}; // The resource keeps an explicit, accessible light palette.
-app.connect().then(async () => { try { await loadPackages(); lock(); } catch (error) { status(error.message, true); $('searchFields').disabled = false; } }).catch(error => status(`Unable to connect to an MCP Apps host: ${error.message}`, true));
+// Request a stable inline height once; content scrolls inside the app.
+// Automatic document sizing can feed a host's iframe ResizeObserver loop.
+app.connect().then(async () => {
+  app.sendSizeChanged({ height: 640 }).catch(() => {});
+  try { await loadPackages(); lock(); } catch (error) { status(error.message, true); $('searchFields').disabled = false; } }).catch(error => status(`Unable to connect to an MCP Apps host: ${error.message}`, true));

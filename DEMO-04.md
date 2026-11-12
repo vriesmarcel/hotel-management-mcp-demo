@@ -33,9 +33,15 @@ Expand **Behind the demo** below the frame to show the tool names called during 
 
 `GetAvailableRooms` advertises `_meta.ui.resourceUri: ui://hotel/reservations/v1`. An MCP Apps-capable client reads that resource and displays the app. Standard MCP clients continue receiving the room data as text and structured content. The existing booking skill/plugin can still use all five Reservations tools without a UI.
 
-**Do not promise an inline widget in Codex desktop for this talk without testing the installed version.** Its MCP tools are already demonstrated; inline MCP Apps rendering has not been verified here. OpenAI's documented embedded-UI surface is ChatGPT. ChatGPT also needs a reachable connector endpoint; this loopback demo has not been published or tunneled.
+**Codex desktop inline rendering and read-only interaction were verified on this machine (26.1106.51428).** Enable the experimental `enable_mcp_apps` feature and keep the hotel host running when Codex connects. If the host was offline during discovery, use Settings → MCP servers → Restart. All three hotel servers should then appear natively in the chat.
 
-The browser page is an explicitly labelled **local reference host** built with the official `AppBridge`. It fetches the real resource over MCP, creates a sandboxed iframe and forwards its calls to the real Reservations endpoint. It is suitable for a reliable local presentation, but it is not a chat client or a claim of Codex inline support. You can move from the Codex conversation to this page for the final interaction.
+For the chat finale, use the **Hotel MCP (.NET 10)** launch profile (no browser launch), press F5, and ask Codex: “Use GetAvailableRooms for November 18–21, 2026, and show the interactive room picker. Don't book anything yet.”
+
+The availability count is the total across all categories. Each card selects a specific room; it is not a category filter. Selecting it opens the package and guest-details step. **Change room** returns to the results and invalidates any quote. The app requests a stable inline height and scrolls within the host's frame, avoiding repeated document/iframe resizing. The selection/layout regression is tested offline with the official AppBridge; it performs no SQL writes.
+
+After UI edits, stop debugging, rebuild and press F5. Ask for a **new** GetAvailableRooms result; an already-open widget retains its old HTML. The 4.0.1 layout change still needs a fresh native-card check after restarting the host. Native inline booking has not yet been exercised; browser booking was verified separately against a disposable test database.
+
+The browser page remains a **local reference host** built with the official AppBridge. It fetches the same resource and forwards its calls to the same Reservations endpoint. Use it as a fallback or expand **Behind the demo** there to inspect tool names.
 
 ## Code tour
 

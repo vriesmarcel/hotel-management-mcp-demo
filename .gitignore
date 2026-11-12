@@ -13,3 +13,4 @@ appsettings.*.Local.json
 *.bak
 *.mdf
 *.ldf
+ConnectionStrings.local.config

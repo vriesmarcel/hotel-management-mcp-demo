@@ -42,7 +42,9 @@ namespace Project_HMS
         {
             var connectionString = Environment.GetEnvironmentVariable("HMS_CONNECTION_STRING");
             if (string.IsNullOrWhiteSpace(connectionString))
-                throw new InvalidOperationException("Set HMS_CONNECTION_STRING or run scripts/Start-Demo.ps1.");
+                connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["HotelDatabase"]?.ConnectionString;
+            if (string.IsNullOrWhiteSpace(connectionString))
+                throw new InvalidOperationException("Run scripts/Configure-Database.ps1 once, then press F5.");
             this.Sqlcon = new SqlConnection(connectionString);
             this.Sqlcon.Open();
         }

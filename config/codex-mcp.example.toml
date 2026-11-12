@@ -1,0 +1,8 @@
+# Merge this section into your Codex config; do not replace your existing settings.
+# Public presentation token only. No environment inheritance is needed.
+[mcp_servers.hotel_reservations]
+url = "http://127.0.0.1:5057/mcp/"
+http_headers = { Authorization = "Bearer 123456" }
+enabled_tools = ["GetAvailableRooms"]
+startup_timeout_sec = 20
+tool_timeout_sec = 300

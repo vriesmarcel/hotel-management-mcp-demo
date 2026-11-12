@@ -14,6 +14,17 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hotel.Tests", "Hotel.Tests\Hotel.Tests.csproj", "{BE5B85DC-C326-457D-8560-9B46D5F9F689}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{32ABFF10-6618-4578-9C45-77417457AADE}"
+	ProjectSection(SolutionItems) = preProject
+		DEMO-03A.md = DEMO-03A.md
+		plugins\hotel-booking\skills\book-hotel-room\SKILL.md = plugins\hotel-booking\skills\book-hotel-room\SKILL.md
+		plugins\hotel-booking\skills\book-hotel-room\agents\openai.yaml = plugins\hotel-booking\skills\book-hotel-room\agents\openai.yaml
+		plugins\hotel-booking\skills\book-hotel-room\scripts\hotel_mcp.py = plugins\hotel-booking\skills\book-hotel-room\scripts\hotel_mcp.py
+		plugins\hotel-booking\.codex-plugin\plugin.json = plugins\hotel-booking\.codex-plugin\plugin.json
+		plugins\hotel-booking\.mcp.json = plugins\hotel-booking\.mcp.json
+		.agents\plugins\marketplace.json = .agents\plugins\marketplace.json
+		scripts\Install-BookingSkill.py = scripts\Install-BookingSkill.py
+		scripts\Package-BookingPlugin.py = scripts\Package-BookingPlugin.py
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hotel.Mcp.Host", "Hotel.Mcp.Host\Hotel.Mcp.Host.csproj", "{6E82ADAE-6A31-411F-8321-B65E1621A40D}"
 EndProject

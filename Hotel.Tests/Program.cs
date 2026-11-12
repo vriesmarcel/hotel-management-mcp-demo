@@ -24,6 +24,7 @@ namespace Hotel.Tests
                 System.Diagnostics.Trace.Listeners.Add(new System.Diagnostics.TextWriterTraceListener(Console.Error));
                 Boundaries();
                 UnitRules();
+                ResourceRules();
                 if (args.Contains("--integration"))
                 {
                     ConnectionString = Environment.GetEnvironmentVariable("HMS_TEST_CONNECTION_STRING");

@@ -30,8 +30,9 @@ internal sealed class ContextCatalogs
     public ContextCatalogs(IReservations reservations, IStays stays, IBilling billing, IPackageService packages)
     {
         var reservation = new ContextCatalog("hotel-reservations",
-            "Availability, quotes and reservations only. Read the reservation policy. Quote before booking. Show the guest the exact stay, total and advance and obtain explicit confirmation before CreateReservation. Reuse requestId only when retrying identical details. No check-in or checkout tools exist on this endpoint.",
+            "Availability, quotes and reservations only. Read hotel://reservation-policy, hotel://room-types and hotel://policies/cancellation/v1. Availability includes the same reference facts for clients without resource access. Quote before booking. Show the guest the exact stay, total, advance and quoted cancellation terms and obtain explicit confirmation before CreateReservation. Reuse requestId only when retrying identical details. No check-in or checkout tools exist on this endpoint.",
             new ReservationTools(reservations, packages));
+        foreach (var resource in Hotel.Mcp.ReferenceResources.Create()) reservation.Resources.Add(resource);
         reservation.Resources.Add(McpServerResource.Create((Func<string>)ReservationGuidance.Policy,
             new McpServerResourceCreateOptions { Name = "ReservationPolicy", UriTemplate = "hotel://reservation-policy", MimeType = "text/plain" }));
         reservation.Resources.Add(ReservationApp.CreateResource());

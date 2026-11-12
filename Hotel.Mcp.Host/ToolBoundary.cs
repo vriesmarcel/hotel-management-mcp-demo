@@ -23,5 +23,5 @@ internal static class ToolBoundary
         return value;
     }
     // Never return addresses, phone numbers or national IDs in general tool results.
-    public static object Summary(Booking b) => new { reservationId = b.BId, roomId = b.RId, checkIn = b.CheckIn.ToString("yyyy-MM-dd"), checkOut = b.CheckOut.ToString("yyyy-MM-dd"), status = b.Status, total = b.Total, paid = b.Advance, remaining = b.Remaining };
+    public static object Summary(Booking b) => new { reservationId = b.BId, roomId = b.RId, checkIn = b.CheckIn.ToString("yyyy-MM-dd"), checkOut = b.CheckOut.ToString("yyyy-MM-dd"), status = b.Status, total = b.Total, paid = b.Advance, remaining = b.Remaining, cancellation = b.Cancellation };
 }

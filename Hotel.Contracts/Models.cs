@@ -35,6 +35,7 @@ namespace Hotel.Contracts
 
     public sealed class Booking
     {
+        public CancellationTerms Cancellation { get; set; }
         public string Status { get; set; }
         public int BId { get; set; }
         public int RId { get; set; }
@@ -72,12 +73,23 @@ namespace Hotel.Contracts
 
     public sealed class Quote
     {
+        public CancellationTerms Cancellation { get; set; }
         public string QuoteId { get; set; }
         public QuoteRequest Stay { get; set; }
         public DateTime ExpiresUtc { get; set; }
         public int Days { get; set; }
         public decimal Total { get; set; }
         public decimal Remaining { get; set; }
+    }
+
+    public sealed class CancellationTerms
+    {
+        public string PolicyUri { get; set; }
+        public string PolicyVersion { get; set; }
+        public string HotelTimeZone { get; set; }
+        public DateTimeOffset CheckInAt { get; set; }
+        public DateTimeOffset FreeCancellationUntil { get; set; }
+        public decimal LateCancellationFee { get; set; }
     }
 
     public sealed class CheckoutReceipt

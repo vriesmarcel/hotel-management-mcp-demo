@@ -24,6 +24,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="DesktopTests.cs" />
     <Compile Include="WorkflowTests.cs" />
+    <Compile Include="ResourceTests.cs" />
     <ProjectReference Include="..\Hotel.Contracts\Hotel.Contracts.csproj">
       <Project>{C4121775-363B-4DD6-9B8A-9D409A26371E}</Project>
       <Name>Hotel.Contracts</Name>

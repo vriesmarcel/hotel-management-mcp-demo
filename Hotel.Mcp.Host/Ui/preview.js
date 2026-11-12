@@ -30,8 +30,12 @@ async function main() {
   const content = resource.contents.find(x => x.uri === uri && x.mimeType === 'text/html;profile=mcp-app');
   if (!content?.text) throw new Error('The hotel UI resource is missing.');
   const frame = $('app');
-  const bridge = new AppBridge(null, { name: 'Hotel local demo host', version: '4.0.0' }, { serverTools: {}, updateModelContext: { text: {} } }, { hostContext: { theme: 'light', displayMode: 'inline' } });
+  const bridge = new AppBridge(null, { name: 'Hotel local demo host', version: '4.0.0' }, { serverTools: {}, serverResources: {}, updateModelContext: { text: {} } }, { hostContext: { theme: 'light', displayMode: 'inline' } });
   bridge.oncalltool = params => tool(params);
+  bridge.onreadresource = params => {
+    if (!['hotel://room-types', 'hotel://policies/cancellation/v1'].includes(params.uri)) throw new Error('This app may only read its hotel reference resources.');
+    return rpc('resources/read', params);
+  };
   bridge.onupdatemodelcontext = async () => { $('connection').textContent = 'Reservation confirmed'; return {}; };
   bridge.onsizechange = ({ height }) => { if (Number.isFinite(height)) frame.style.height = `${Math.max(500, Math.min(height, 12000))}px`; };
   bridge.oninitialized = async () => {

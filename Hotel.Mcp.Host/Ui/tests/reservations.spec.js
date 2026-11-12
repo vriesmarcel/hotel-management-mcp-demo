@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 
 // The PowerShell runner checks a UUID database marker before starting the host.
 if (process.env.HMS_UI_TEST_OWNED !== '5059') throw new Error('Run scripts/Test-Demo04.ps1; never point browser booking tests at the rehearsal database.');
+const cancellation = { policyUri: 'hotel://policies/cancellation/v1', policyVersion: 'v1', hotelTimeZone: 'Europe/Berlin', checkInAt: '2026-11-18T15:00:00+01:00', freeCancellationUntil: '2026-11-16T15:00:00+01:00', lateCancellationFee: 5000 };
 const base = 'http://127.0.0.1:5059';
 const fakeRooms = { checkIn: '2026-11-18', checkOut: '2026-11-21', nights: 3, rooms: [
   { roomId: 3, category: 'Family', nightlyRate: 5000 }, { roomId: 8, category: 'Family', nightlyRate: 5000 },
@@ -36,8 +37,8 @@ async function mock(page, overrides = {}) {
     let data;
     if (name === 'GetAvailableRooms') data = { ...fakeRooms, ...args };
     if (name === 'GetPackages') data = { food, services };
-    if (name === 'CalculateQuote') data = { quoteId: 'mock-quote', stay: args, days: 3, total: 16000, remaining: 16000 - args.advance, expiresUtc: new Date(Date.now() + 900000).toISOString() };
-    if (name === 'CreateReservation') data = { reservationId: 42, roomId: 3, checkIn: fakeRooms.checkIn, checkOut: fakeRooms.checkOut, total: 16000, paid: args.advance, remaining: 16000 - args.advance, status: 'Reserved' };
+    if (name === 'CalculateQuote') data = { cancellation, quoteId: 'mock-quote', stay: args, days: 3, total: 16000, remaining: 16000 - args.advance, expiresUtc: new Date(Date.now() + 900000).toISOString() };
+    if (name === 'CreateReservation') data = { cancellation, reservationId: 42, roomId: 3, checkIn: fakeRooms.checkIn, checkOut: fakeRooms.checkOut, total: 16000, paid: args.advance, remaining: 16000 - args.advance, status: 'Reserved' };
     await route.fulfill({ json: { jsonrpc: '2.0', id: body.id, result: { content: [{ type: 'text', text: JSON.stringify(data) }] } } });
   }); return calls;
 }
@@ -90,8 +91,12 @@ test('quote invalidation, explicit confirmation, layout and safe text rendering'
   await frame(page).locator('#service').selectOption('0'); await expect(frame(page).locator('#review')).toBeHidden();
   await frame(page).locator('#service').selectOption('21'); await frame(page).locator('#quoteButton').click();
   await expect(frame(page).locator('#review')).toBeVisible();
+  await expect(frame(page).locator('#quoteCancellation')).toContainText('16 Nov 2026, 15:00 (Europe/Berlin)');
+  await expect(frame(page).locator('#quoteCancellation')).toContainText('5,000');
   await frame(page).locator('#review').screenshot({ path: testInfo.outputPath('quote-desktop.png') });
   await page.setViewportSize({ width: 390, height: 844 });
+  await expect(frame(page).locator('#quoteCancellation')).toContainText('16 Nov 2026, 15:00 (Europe/Berlin)');
+  await expect(frame(page).locator('#quoteCancellation')).toContainText('5,000');
   await frame(page).locator('#review').screenshot({ path: testInfo.outputPath('quote-mobile.png') });
   const child = page.frames().find(x => x.parentFrame());
   expect(await child.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -114,7 +119,7 @@ test('lost response retries identical UUID and payload, then stops on uncertaint
 });
 
 test('expired quotes cannot book', async ({ page }) => {
-  const calls = await mock(page, { CalculateQuote: (route, body) => route.fulfill({ json: { jsonrpc: '2.0', id: body.id, result: { content: [{ type: 'text', text: JSON.stringify({ quoteId: 'expired', stay: body.params.arguments, days: 3, total: 15000, remaining: 15000, expiresUtc: '2000-01-01T00:00:00Z' }) }] } } }) });
+  const calls = await mock(page, { CalculateQuote: (route, body) => route.fulfill({ json: { jsonrpc: '2.0', id: body.id, result: { content: [{ type: 'text', text: JSON.stringify({ cancellation, quoteId: 'expired', stay: body.params.arguments, days: 3, total: 15000, remaining: 15000, expiresUtc: '2000-01-01T00:00:00Z' }) }] } } }) });
   await ready(page); await frame(page).locator('.room').first().click(); await guest(page);
   await frame(page).locator('#quoteButton').click(); await frame(page).locator('#confirm').check();
   await expect(frame(page).locator('#expiry')).toContainText('expired'); await expect(frame(page).locator('#book')).toBeDisabled();
@@ -140,4 +145,14 @@ test('availability is escaped and empty/error results stay actionable', async ({
   mode = 'empty'; await frame(page).locator('#find').click(); await expect(frame(page).locator('#empty')).toBeVisible();
   mode = 'error'; await frame(page).locator('#find').click(); await expect(frame(page).locator('#status')).toContainText('Invalid stay dates.');
   await expect(frame(page).locator('#find')).toBeEnabled();
+});
+
+test('quote without cancellation terms cannot reach confirmation or booking', async ({ page }) => {
+  const calls = await mock(page, { CalculateQuote: (route, body) => route.fulfill({ json: { jsonrpc: '2.0', id: body.id, result: { structuredContent: { quoteId: 'old-host', stay: body.params.arguments, days: 3, total: 15000, remaining: 15000, expiresUtc: new Date(Date.now()+900000).toISOString() }, content: [] } } }) });
+  await ready(page); await frame(page).locator('.room').first().click(); await guest(page);
+  await frame(page).locator('#quoteButton').click();
+  await expect(frame(page).locator('#status')).toContainText('Cancellation terms are missing');
+  await expect(frame(page).locator('#review')).toBeHidden();
+  await expect(frame(page).locator('#book')).toBeDisabled();
+  expect(calls.filter(x=>x.name==='CreateReservation')).toHaveLength(0);
 });

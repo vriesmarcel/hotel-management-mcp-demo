@@ -20,6 +20,12 @@ spec.loader.exec_module(helper)
 
 
 class BookingSkillTests(unittest.TestCase):
+    def test_reference_commands_only_read_resources(self):
+        for command, uri in [("room-info", "hotel://room-types"), ("cancellation-policy", "hotel://policies/cancellation/v1")]:
+            with self.subTest(command=command), patch.object(helper, "rpc", side_effect=[{}, {"contents": []}]) as network, contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(helper.main([command]), 0)
+                self.assertEqual(network.call_args_list[-1].args, ("resources/read", {"uri": uri}, 2))
+                self.assertEqual(network.call_count, 2)
     def booking(self):
         return dict(quoteId=str(uuid.uuid4()), guestName="Synthetic Guest", address="Demo Street",
                     phone="DEMO-PHONE", nationalId="DEMO-ID", advance=0, requestId=str(uuid.uuid4()), confirmed=True)

@@ -1,6 +1,6 @@
 {
   "name": "hotel-booking",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Guide a booking at the local demo hotel: availability, follow-up questions, quote, confirmation and reservation.",
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
@@ -10,7 +10,12 @@
     "shortDescription": "Find a room and book a confirmed stay",
     "longDescription": "A guided reservation workflow backed by the hotel's local .NET MCP host. Uses demo authentication and SQL-only advance records. Start the hotel host separately.",
     "category": "Productivity",
-    "capabilities": ["Read", "Write"],
-    "defaultPrompt": ["Help me book a room at the demo hotel for November 18–21, 2026."]
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Help me book a room at the demo hotel for November 18\u00e2\u20ac\u201c21, 2026."
+    ]
   }
 }

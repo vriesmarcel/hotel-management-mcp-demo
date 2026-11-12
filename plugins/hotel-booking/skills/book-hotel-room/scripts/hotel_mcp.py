@@ -82,7 +82,7 @@ def invoke(tool, arguments):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("tool", choices=[*FIELDS, "policy", "catalog", "new-request-id"])
+    parser.add_argument("tool", choices=[*FIELDS, "policy", "room-info", "cancellation-policy", "catalog", "new-request-id"])
     args = parser.parse_args(argv)
     arguments = {}
     mutation_started = False
@@ -95,8 +95,9 @@ def main(argv=None):
             validate(args.tool, arguments)
         rpc("initialize", {"protocolVersion": "2025-11-25", "capabilities": {},
                            "clientInfo": {"name": "hotel-booking-skill", "version": "1.0.0"}}, 1)
-        if args.tool == "policy":
-            result = rpc("resources/read", {"uri": "hotel://reservation-policy"}, 2)
+        if args.tool in ("policy", "room-info", "cancellation-policy"):
+            uri = {"policy": "hotel://reservation-policy", "room-info": "hotel://room-types", "cancellation-policy": "hotel://policies/cancellation/v1"}[args.tool]
+            result = rpc("resources/read", {"uri": uri}, 2)
         elif args.tool == "catalog":
             result = rpc("tools/list", {}, 2)
         else:

@@ -10,12 +10,13 @@
     <label>Check-out<input id="checkOut" type="date" required></label>
     <button type="button" id="find">Find rooms <span aria-hidden="true">→</span></button>
   </div></fieldset></form>
+  <details id="hotelFacts" hidden><summary>Room information and cancellation policy</summary><p id="bedFacts" class="muted"></p><p id="policyFacts" class="muted"></p></details>
   <section id="availability" hidden><div class="section-heading"><h2>01 <span>Choose your room</span></h2><span id="count"></span></div>
     <p class="muted">Nightly rates · Currency is not specified by this demo hotel.</p><div id="rooms" class="rooms" role="group" aria-label="Available rooms"></div>
     <p id="empty" hidden>No rooms are available for this stay. Try different dates.</p>
   </section>
   <form id="details" hidden><button type="button" id="changeRoom">← Change room</button><fieldset id="detailFields"><section>
-    <h2>02 <span>Make yourself at home</span></h2><p id="selection" class="selection"></p>
+    <h2>02 <span>Make yourself at home</span></h2><p id="selection" class="selection"></p><p id="roomFacts" class="muted"></p>
     <div class="two-columns"><label>Food package<select id="food"></select></label><label>Service package<select id="service"></select></label></div>
     <p class="muted">Food is charged per night; services once per stay. Packages do not specify the number of people covered.</p>
     <label class="advance">Advance to record<input id="advance" type="number" min="0" step="0.01" value="0" required></label>
@@ -26,10 +27,10 @@
     <button type="button" id="quoteButton">Review my stay <span aria-hidden="true">→</span></button>
   </section></fieldset></form>
   <section id="review" class="review" hidden><div class="section-heading"><h2>Your stay, at a glance</h2><span class="pill">HOTEL QUOTE</span></div>
-    <p id="quoteStay"></p><p id="quotePackages" class="muted"></p><dl id="totals"></dl><p id="expiry" class="muted"></p>
-    <label class="confirmation"><input id="confirm" type="checkbox">I confirm this room, dates, packages, total and advance.</label>
+    <p id="quoteStay"></p><p id="quotePackages" class="muted"></p><dl id="totals"></dl><p id="expiry" class="muted"></p><h3>Cancellation terms</h3><p id="quoteCancellation"></p>
+    <label class="confirmation"><input id="confirm" type="checkbox">I confirm this room, dates, packages, total, advance and cancellation terms.</label>
     <button id="book" type="button" disabled>Confirm &amp; book</button>
   </section>
-  <section id="receipt" class="receipt" hidden><span class="success-mark" aria-hidden="true">✓</span><p class="eyebrow">YOU’RE EXPECTED</p><h2>Your room is reserved.</h2><p id="receiptDetails"></p><p id="receiptTotal"></p><p class="muted">Check-in and checkout are handled separately. We look forward to welcoming you.</p></section>
+  <section id="receipt" class="receipt" hidden><span class="success-mark" aria-hidden="true">✓</span><p class="eyebrow">YOU’RE EXPECTED</p><h2>Your room is reserved.</h2><p id="receiptDetails"></p><p id="receiptTotal"></p><p id="receiptCancellation"></p><p class="muted">Check-in and checkout are handled separately. We look forward to welcoming you.</p></section>
   <footer>Availability is not a hold. Your room is secured when the hotel confirms the reservation.</footer>
 </main><script>/* APP_JS */</script></body></html>

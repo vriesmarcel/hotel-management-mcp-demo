@@ -2,3 +2,5 @@
 
 /* The host owns iframe height; each booking step remains reachable inside it. */
 html,body{height:100%;overflow:hidden}main{height:100%;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-gutter:stable}#details{scroll-margin-top:16px}#availability{scroll-margin-top:16px}
+
+#hotelFacts{margin-top:20px}#hotelFacts summary{cursor:pointer;font-size:14px;font-weight:600}.room .capacity{margin-top:10px;letter-spacing:0;text-transform:none}#quoteCancellation{font-size:14px;overflow-wrap:anywhere}h3{font-size:16px;margin:20px 0 8px}

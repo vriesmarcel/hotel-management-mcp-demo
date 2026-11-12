@@ -1,10 +1,43 @@
 import { App } from '@modelcontextprotocol/ext-apps';
 
-const app = new App({ name: 'Hotel Reservations', version: '4.0.1' }, {}, { autoResize: false });
+const app = new App({ name: 'Hotel Reservations', version: '4.1.0' }, {}, { autoResize: false });
 const $ = id => document.getElementById(id);
 const money = value => Number(value).toLocaleString('en-US', { maximumFractionDigits: 2 });
 let rooms = [], selected, quote, busy = false, done = false, pending, attempts = 0, packagesReady = false;
-let searchDates;
+let searchDates, roomInformation, cancellationPolicy;
+const roomInfo = category => roomInformation?.roomTypes?.find(x => x.category.toLowerCase() === category.toLowerCase());
+function capacityText(category) {
+  const capacity = roomInfo(category)?.maximumGuests;
+  return capacity ? `Maximum ${capacity} guests` : 'Occupancy limit not specified';
+}
+function applyReferences(rooms, policy) {
+  if (rooms) roomInformation = rooms;
+  if (policy) cancellationPolicy = policy;
+  $('hotelFacts').hidden = !roomInformation && !cancellationPolicy;
+  if (roomInformation) {
+    $('bedFacts').textContent = `Bed lengths: ${roomInformation.beds.map(b => `${b.type} ${b.lengthCm} cm`).join(', ')}. ${roomInformation.note}`;
+    document.querySelectorAll('.room .capacity').forEach(x => { x.textContent = capacityText(x.dataset.category); });
+    if (selected) $('roomFacts').textContent = `${capacityText(selected.category)}. Bed configuration for this specific room is not recorded.`;
+  }
+  if (cancellationPolicy) $('policyFacts').textContent = cancellationPolicy.description;
+}
+async function loadReferences() {
+  // Resource reads are host-controlled. Availability carries the same facts as a fallback.
+  if (!app.getHostCapabilities()?.serverResources) return;
+  const read = async uri => {
+    const result = await app.readServerResource({ uri }, { timeout: 15000 });
+    const content = result.contents.find(x => x.uri === uri && typeof x.text === 'string');
+    if (!content) throw new Error('Missing hotel resource.');
+    return JSON.parse(content.text);
+  };
+  const results = await Promise.allSettled([read('hotel://room-types'), read('hotel://policies/cancellation/v1')]);
+  applyReferences(results[0].status === 'fulfilled' ? results[0].value : null, results[1].status === 'fulfilled' ? results[1].value : null);
+}
+function cancellationText(terms) {
+  if (!terms) return 'Historical cancellation terms were not recorded.';
+  const when = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: terms.hotelTimeZone }).format(new Date(terms.freeCancellationUntil));
+  return `Free cancellation through ${when} (${terms.hotelTimeZone}), including the deadline. Afterwards: ${money(terms.lateCancellationFee)} for one room night, excluding food and service packages. Policy ${terms.policyVersion}.`;
+}
 function status(message, error = false) { $('status').textContent = message; $('status').className = error ? 'error' : ''; }
 function unpack(result) {
   if (result.isError) throw new ToolError(result.content?.filter(x => x.type === 'text').map(x => x.text).join('\n') || 'The hotel could not complete this request.');
@@ -32,6 +65,7 @@ function renderAvailability(result) {
   invalidate(); selected = undefined; $('details').hidden = true;
   searchDates = { checkIn: result.checkIn.slice(0, 10), checkOut: result.checkOut.slice(0, 10) };
   $('checkIn').value = searchDates.checkIn; $('checkOut').value = searchDates.checkOut;
+  applyReferences(result.roomInformation, result.cancellationPolicy);
   rooms = result.rooms; $('rooms').replaceChildren(); $('availability').hidden = false;
   $('count').textContent = `${rooms.length} rooms across all categories · ${result.nights} night${result.nights === 1 ? '' : 's'}`;
   $('empty').hidden = rooms.length !== 0;
@@ -42,11 +76,13 @@ function renderAvailability(result) {
     const category = document.createElement('strong'); category.textContent = room.category;
     const rate = document.createElement('span'); rate.className = 'rate'; rate.textContent = money(room.nightlyRate);
     const per = document.createElement('small'); per.textContent = '/ night'; rate.append(per); button.append(id, category, rate);
+    const capacity = document.createElement('small'); capacity.className = 'capacity'; capacity.dataset.category = room.category; capacity.textContent = capacityText(room.category); button.append(capacity);
     button.addEventListener('click', () => {
       if (busy || pending || done) return;
       selected = room; invalidate();
       document.querySelectorAll('.room').forEach(x => x.setAttribute('aria-pressed', String(x === button)));
       $('selection').textContent = `Room ${room.roomId} · ${room.category} · ${money(room.nightlyRate)} per night`;
+      $('roomFacts').textContent = `${capacityText(room.category)}. Bed configuration for this specific room is not recorded.`;
       $('availability').hidden = true;
       $('details').hidden = false; status(`Room ${room.roomId} selected. Choose your extras and enter guest details.`);
       $('details').scrollIntoView({ behavior: 'instant', block: 'start' });
@@ -98,6 +134,10 @@ $('quoteButton').addEventListener('click', async e => {
   busy = true; invalidate(); lock(); status('Getting your quote from the hotel…');
   try {
     quote = await call('CalculateQuote', { roomId: selected.roomId, ...dates(), foodPackageId: +$('food').value, servicePackageId: +$('service').value, advance: +$('advance').value });
+    if (!quote.cancellation?.policyUri || !quote.cancellation?.policyVersion || !Number.isFinite(Date.parse(quote.cancellation.freeCancellationUntil)) || !Number.isFinite(quote.cancellation.lateCancellationFee) || !quote.cancellation.hotelTimeZone) {
+      invalidate(); throw new Error('Cancellation terms are missing. Update the hotel host and request a new quote before booking.');
+    }
+    $('quoteCancellation').textContent = cancellationText(quote.cancellation);
     $('quoteStay').textContent = `Room ${selected.roomId} · ${selected.category} · ${quote.stay.checkIn.slice(0,10)} to ${quote.stay.checkOut.slice(0,10)} · ${quote.days} nights`;
     $('quotePackages').textContent = `Food: ${$('food').selectedOptions[0].text}. Service: ${$('service').selectedOptions[0].text}.`;
     $('totals').replaceChildren();
@@ -127,6 +167,7 @@ $('book').addEventListener('click', async () => {
     done = true; pending = undefined; $('review').hidden = true; $('details').hidden = true; $('availability').hidden = true;
     $('receipt').hidden = false; $('receiptDetails').textContent = `Reservation ${receipt.reservationId} · Room ${receipt.roomId} · ${receipt.checkIn.slice(0,10)} to ${receipt.checkOut.slice(0,10)}`;
     $('receiptTotal').textContent = `Total ${money(receipt.total)} · Recorded paid ${money(receipt.paid)} · Remaining ${money(receipt.remaining)}`;
+    $('receiptCancellation').textContent = cancellationText(receipt.cancellation);
     status('Reservation confirmed by the hotel.');
     // No guest identity is added to the conversation context.
     app.updateModelContext({ content: [{ type: 'text', text: `Hotel reservation confirmed: ${JSON.stringify(receipt)}` }] }).catch(() => {});
@@ -147,4 +188,5 @@ app.onhostcontextchanged = () => {}; // The resource keeps an explicit, accessib
 // Automatic document sizing can feed a host's iframe ResizeObserver loop.
 app.connect().then(async () => {
   app.sendSizeChanged({ height: 640 }).catch(() => {});
+  loadReferences().catch(() => {});
   try { await loadPackages(); lock(); } catch (error) { status(error.message, true); $('searchFields').disabled = false; } }).catch(error => status(`Unable to connect to an MCP Apps host: ${error.message}`, true));

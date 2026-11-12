@@ -109,3 +109,12 @@ The runner verifies a UUID ownership marker, creates a disposable test database,
 - [Official C# SDK MCP Apps extension](https://github.com/modelcontextprotocol/csharp-sdk/blob/main/docs/concepts/apps/apps.md)
 - [MCP Apps quickstart and TypeScript bridge](https://apps.extensions.modelcontextprotocol.io/api/documents/quickstart.html)
 - [OpenAI embedded UI documentation](https://developers.openai.com/plugins/build/chatgpt-ui)
+
+
+## Resource-aware room picker (4.1.0)
+
+Run `scripts/Update-DemoDatabase.ps1` once for your existing synthetic rehearsal database, restart the host, and request a fresh GetAvailableRooms card. Old cards contain old bundled HTML.
+
+The picker reads `hotel://room-types` and `hotel://policies/cancellation/v1` through `App.readServerResource` when the host advertises resource support. Otherwise it consumes identical reference facts returned by availability. Open “Room information and cancellation policy”, select Family (maximum five guests), and review the bed-length explanation. Specific room bed configurations remain unknown.
+
+The quote shows the exact server-computed deadline and late fee. For November 18, 2026 check-in, cancellation is free through November 16, 15:00 Europe/Berlin (+01:00); later the fee is one room night excluding packages. The confirmation checkbox includes cancellation terms. Missing quote terms block booking. The receipt uses the reservation's stored snapshot. No cancellation execution or actual payment has been added.

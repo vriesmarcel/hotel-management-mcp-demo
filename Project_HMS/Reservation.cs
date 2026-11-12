@@ -9,6 +9,7 @@ namespace Project_HMS
     {
         private readonly DesktopServices services;
         private string quoteId;
+        private CancellationTerms cancellation;
         private string requestId = Guid.NewGuid().ToString("D");
 
         public Reservation(DesktopServices services)
@@ -73,7 +74,7 @@ namespace Project_HMS
             DesktopUi.Run(() =>
             {
                 if (quoteId == null) throw new HotelValidationException("Calculate a quote first.");
-                if (MessageBox.Show($"Book room {txtRId.Text} for {txtCName.Text}, {dtpCheckIn.Value:yyyy-MM-dd} to {dtpCheckOut.Value:yyyy-MM-dd}, total {txtTotal.Text}, advance {txtAdv.Text}?", "Confirm reservation", MessageBoxButtons.YesNo) != DialogResult.Yes) return;
+                if (MessageBox.Show($"Book room {txtRId.Text} for {txtCName.Text}, {dtpCheckIn.Value:yyyy-MM-dd} to {dtpCheckOut.Value:yyyy-MM-dd}, total {txtTotal.Text}, advance {txtAdv.Text}?\nFree cancellation through {cancellation.FreeCancellationUntil:yyyy-MM-dd HH:mm zzz} ({cancellation.HotelTimeZone}). Afterwards: {cancellation.LateCancellationFee} for one room night, excluding packages. Policy {cancellation.PolicyVersion}.", "Confirm reservation", MessageBoxButtons.YesNo) != DialogResult.Yes) return;
                 var booking = services.Reservations.CreateReservation(new ReservationRequest
                 {
                     QuoteId = quoteId, RequestId = requestId, Confirmed = true,
@@ -93,6 +94,7 @@ namespace Project_HMS
             {
                 var quote = services.Reservations.CalculateQuote(Stay());
                 quoteId = quote.QuoteId;
+                cancellation = quote.Cancellation;
                 requestId = Guid.NewGuid().ToString("D");
                 txtDay.Text = quote.Days.ToString();
                 txtTotal.Text = quote.Total.ToString();
@@ -107,6 +109,7 @@ namespace Project_HMS
                 var stay = Stay();
                 var quote = services.Reservations.CalculateQuote(stay, decimal.Parse(txtAdv.Text));
                 quoteId = quote.QuoteId;
+                cancellation = quote.Cancellation;
                 requestId = Guid.NewGuid().ToString("D");
                 txtDay.Text = quote.Days.ToString();
                 txtTotal.Text = quote.Total.ToString();

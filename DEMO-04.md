@@ -118,3 +118,12 @@ Run `scripts/Update-DemoDatabase.ps1` once for your existing synthetic rehearsal
 The picker reads `hotel://room-types` and `hotel://policies/cancellation/v1` through `App.readServerResource` when the host advertises resource support. Otherwise it consumes identical reference facts returned by availability. Open “Room information and cancellation policy”, select Family (maximum five guests), and review the bed-length explanation. Specific room bed configurations remain unknown.
 
 The quote shows the exact server-computed deadline and late fee. For November 18, 2026 check-in, cancellation is free through November 16, 15:00 Europe/Berlin (+01:00); later the fee is one room night excluding packages. The confirmation checkbox includes cancellation terms. Missing quote terms block booking. The receipt uses the reservation's stored snapshot. No cancellation execution or actual payment has been added.
+
+
+## Complete the conversation after booking (picker 4.2.0)
+
+After a successful Confirm & book click, the picker calls `App.sendMessage` (`ui/message`, role `user`) with the public receipt and asks the assistant to confirm the completed reservation in chat. `updateModelContext` alone only supplies context to a future turn, so it did not finish the conversation automatically. No guest name, address, phone or national ID is included in the chat handoff.
+
+Only successful bookings send the follow-up. Quote-only, rejected and uncertain bookings do not. A chat delivery error cannot retry or undo the completed booking, and it does not trigger an automatic message retry. Hosts without `message.text` retain the receipt and show a manual chat-verification hint. The local reference host displays the outgoing message under Behind the demo / Chat handoff; it does not simulate an assistant answer.
+
+Restart the host and request a fresh picker card to load this bundle. In Codex, rehearse the final user-clicked confirmation and check that the assistant replies with the saved reservation and cancellation terms. SDK reference: https://apps.extensions.modelcontextprotocol.io/api/classes/app.App.html#sendMessage

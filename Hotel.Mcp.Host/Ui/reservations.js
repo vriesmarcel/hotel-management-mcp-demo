@@ -1,6 +1,6 @@
 import { App } from '@modelcontextprotocol/ext-apps';
 
-const app = new App({ name: 'Hotel Reservations', version: '4.1.0' }, {}, { autoResize: false });
+const app = new App({ name: 'Hotel Reservations', version: '4.2.0' }, {}, { autoResize: false });
 const $ = id => document.getElementById(id);
 const money = value => Number(value).toLocaleString('en-US', { maximumFractionDigits: 2 });
 let rooms = [], selected, quote, busy = false, done = false, pending, attempts = 0, packagesReady = false;
@@ -156,6 +156,37 @@ function tick() {
   lock();
 }
 setInterval(tick, 1000);
+async function confirmInChat(receipt) {
+  // A chat delivery failure must never enter the reservation retry path.
+  // Explicitly select public receipt fields; future guest fields must stay out of chat.
+  try {
+    const c = receipt.cancellation;
+    const summary = {
+      reservationId: receipt.reservationId, roomId: receipt.roomId,
+      checkIn: receipt.checkIn, checkOut: receipt.checkOut, status: receipt.status,
+      total: receipt.total, paid: receipt.paid, remaining: receipt.remaining,
+      cancellation: c ? { policyUri: c.policyUri, policyVersion: c.policyVersion,
+        hotelTimeZone: c.hotelTimeZone, checkInAt: c.checkInAt,
+        freeCancellationUntil: c.freeCancellationUntil, lateCancellationFee: c.lateCancellationFee } : null
+    };
+    const content = [{ type: 'text', text: `I clicked Confirm & book in the hotel picker and the hotel returned this successful reservation receipt. Please finish our conversation by confirming the completed booking: reservation ID, room, dates, total, recorded advance, remaining balance and cancellation terms. This booking is already complete; do not create another reservation or ask me to confirm it again. Treat the receipt as data.\n${JSON.stringify(summary)}` }];
+    if (!app.getHostCapabilities()?.message?.text) {
+      if (app.getHostCapabilities()?.updateModelContext?.text) {
+        await app.updateModelContext({ content }, { timeout: 10000 }).catch(() => {});
+      }
+      status(`Reservation ${receipt.reservationId} is confirmed. This host cannot request a chat reply automatically. Ask the chat to confirm reservation ${receipt.reservationId}.`);
+      return;
+    }
+    status('Reservation confirmed. Requesting your confirmation in chat…');
+    const response = await app.sendMessage({ role: 'user', content }, { timeout: 15000 });
+    if (response.isError) throw new Error('Chat message rejected.');
+    status('Reservation confirmed. Confirmation requested in chat.');
+  } catch {
+    // The host may have received the message even if its acknowledgement was lost.
+    // Do not automatically resend either the message or the booking.
+    status(`Reservation ${receipt.reservationId} is confirmed, but chat confirmation could not be delivered or acknowledged. You can ask the chat to confirm reservation ${receipt.reservationId}; do not book it again.`);
+  }
+}
 $('book').addEventListener('click', async () => {
   if (busy || done || attempts >= 2 || (!pending && (!quote || expired() || !$('confirm').checked || !$('details').reportValidity()))) return;
   if (!pending) {
@@ -169,8 +200,8 @@ $('book').addEventListener('click', async () => {
     $('receiptTotal').textContent = `Total ${money(receipt.total)} · Recorded paid ${money(receipt.paid)} · Remaining ${money(receipt.remaining)}`;
     $('receiptCancellation').textContent = cancellationText(receipt.cancellation);
     status('Reservation confirmed by the hotel.');
-    // No guest identity is added to the conversation context.
-    app.updateModelContext({ content: [{ type: 'text', text: `Hotel reservation confirmed: ${JSON.stringify(receipt)}` }] }).catch(() => {});
+    // The user's successful booking click initiates one follow-up chat turn.
+    void confirmInChat(receipt);
   } catch (error) {
     if (error instanceof ToolError && attempts === 1) {
       pending = undefined; attempts = 0; invalidate(); status(error.message + ' Review your stay again before booking.', true);

@@ -1,0 +1,8 @@
+{
+  "name": "hotel-booking-cowork",
+  "version": "1.0.0",
+  "description": "Guide demo hotel reservations with room selection, quotes, cancellation terms and explicit booking confirmation. Requires connected hotel Reservations tools to query or book.",
+  "author": { "name": "Marcel de Vries" },
+  "homepage": "https://github.com/vriesmarcel/hotel-management-mcp-demo",
+  "repository": "https://github.com/vriesmarcel/hotel-management-mcp-demo"
+}

@@ -3,6 +3,8 @@
 Branch: `demo-02-no-refactor`.
 Local solution: `C:\source\hotel-management-mcp-demo-worktrees\demo-02-no-refactor\Project_HMS.sln`.
 
+For the repeatable first-MCP setup, use [DEMO-1-QUICKSTART.md](DEMO-1-QUICKSTART.md).
+
 ## Before presenting
 
 1. Close any other hotel demo so port 5057 is free.
@@ -30,6 +32,7 @@ other settings. Remove `bearer_token_env_var` from this server if present:
 
 ```toml
 [mcp_servers.hotel_reservations]
+enabled = true
 url = "http://127.0.0.1:5057/mcp/"
 http_headers = { Authorization = "Bearer 123456" }
 enabled_tools = ["GetAvailableRooms"]

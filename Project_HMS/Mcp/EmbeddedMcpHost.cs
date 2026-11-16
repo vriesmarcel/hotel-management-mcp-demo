@@ -23,6 +23,8 @@ namespace Project_HMS.Mcp
         public const string DemoToken = "123456";
         public const string ModernVersion = "2026-07-28";
         public const string LegacyVersion = "2025-11-25";
+        // Codex desktop currently initializes with this Streamable HTTP revision.
+        public const string CodexVersion = "2025-06-18";
         private const int MaxBodyBytes = 65536;
         private readonly HttpListener listener = new HttpListener();
         private readonly CancellationTokenSource stopping = new CancellationTokenSource();
@@ -123,10 +125,10 @@ namespace Project_HMS.Mcp
                 // Only the legacy initialization exchange may omit the version header.
                 if (version == null && method == "initialize") version = GetString(parameters, "protocolVersion");
                 if (version == null && method == "notifications/initialized") version = LegacyVersion;
-                if (version != ModernVersion && version != LegacyVersion)
+                if (version != ModernVersion && version != LegacyVersion && version != CodexVersion)
                 {
                     await Error(response, id, -32022, "Unsupported protocol version.", 400,
-                        new { requested = version, supported = new[] { ModernVersion, LegacyVersion } });
+                        new { requested = version, supported = new[] { ModernVersion, LegacyVersion, CodexVersion } });
                     return;
                 }
                 if (version == ModernVersion)

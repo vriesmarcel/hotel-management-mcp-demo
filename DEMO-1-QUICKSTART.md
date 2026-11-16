@@ -26,7 +26,7 @@ Python 3.11+ and Visual Studio with .NET Framework 4.8 build tools are required.
 python .\scripts\Configure-WinFormsCodex.py --probe
 ```
 
-Expected: **PASS: hotel-reservations-net48 answered MCP initialization and exposes only GetAvailableRooms.** This verifies the host identity and exact catalog without querying SQL or hitting the tool breakpoint.
+Expected: **PASS: hotel-reservations-net48 accepted Codex protocol 2025-06-18 and exposes only GetAvailableRooms.** This verifies the host identity and exact catalog without querying SQL or hitting the tool breakpoint.
 
 5. Restart MCP servers in Codex **after** the WinForms app is listening, or fully quit and relaunch Codex. Start a fresh chat and inspect `/mcp`. The hotel server should be connected and GetAvailableRooms available. If a trusted project's `.codex/config.toml` overrides the user settings, remove the conflicting hotel override; this script edits only the user configuration.
 6. Send:
@@ -48,8 +48,8 @@ python .\scripts\Configure-WinFormsCodex.py --probe --availability
 python .\scripts\Test-WinFormsCodex.py
 ```
 
-If the probe succeeds but Codex has no tools, the remaining issue is Codex loading/restarting the connection or a project/plugin override, not the WinForms endpoint. If the probe cannot connect, start/resume the WinForms app. HTTP 401 indicates authentication trouble; HTTP 404 or an unexpected server identity suggests the wrong endpoint/host. `/mcp/reservations` belongs to the later .NET 10 demo.
+An enabled entry in `codex mcp list` only confirms configuration, not a successful handshake. If the probe succeeds but Codex has no tools, inspect its startup error and restart the connection after the host is listening; also check project/plugin overrides. If the probe cannot connect, run it in your own PowerShell with the app started and resumed (a sandbox may not be allowed to reach desktop loopback). HTTP 401 indicates authentication trouble; HTTP 404 or an unexpected server identity suggests the wrong endpoint/host. `/mcp/reservations` belongs to the later .NET 10 demo.
 
 The setup does not stop processes, change firewall/URL permissions, alter database configuration or restart Codex. If startup reports URL access denied, use the URL ACL guidance in `DEMO.md`; a local URL reservation is different from a firewall rule. A browser GET is not an MCP connectivity test.
 
-The probe uses the embedded adapter's supported 2025-11-25 compatibility mode. This does not force Codex to use that protocol version. Closing the login window stops its embedded endpoint. When returning to later demos, restore their endpoint, full tool catalog and plugin settings deliberately; the backup contains the prior user configuration and may also contain credentials, so do not publish it.
+The probe uses 2025-06-18, the revision requested by the installed Codex desktop client, and initializes without a version header just like Codex. The adapter also supports 2025-11-25 and 2026-07-28. An older binary rejects the Codex revision with `Unsupported protocol version`; stop debugging, rebuild this branch and press F5 before reconnecting Codex. Closing the login window stops its embedded endpoint. When returning to later demos, restore their endpoint, full tool catalog and plugin settings deliberately; the backup contains the prior user configuration and may also contain credentials, so do not publish it.

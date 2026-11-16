@@ -24,7 +24,7 @@ static class Program
             var xml = XDocument.Load(args[0]);
             Environment.SetEnvironmentVariable("HMS_CONNECTION_STRING", xml.Root.Elements("add").Single(x => (string)x.Attribute("name") == "HotelDatabase").Attribute("connectionString").Value);
             Run().GetAwaiter().GetResult();
-            Console.WriteLine("PASS: " + checks + " no-refactoring MCP assertions; both protocol versions; real SQL reads only.");
+            Console.WriteLine("PASS: " + checks + " no-refactoring MCP assertions; all three protocol versions; real SQL reads only.");
             return 0;
         }
         catch (Exception e) { Console.Error.WriteLine("FAIL: " + e.GetType().Name + " (details suppressed to protect local configuration)"); return 1; }
@@ -50,7 +50,7 @@ static class Program
         int port = ((IPEndPoint)socket.LocalEndpoint).Port; socket.Stop();
         var tool = McpServerTool.Create(typeof(AvailabilityTools).GetMethod("GetAvailableRooms"), adapter);
         using var host = new EmbeddedMcpHost(tool, port: port); host.Start();
-        foreach (var version in new[] { EmbeddedMcpHost.ModernVersion, EmbeddedMcpHost.LegacyVersion })
+        foreach (var version in new[] { EmbeddedMcpHost.ModernVersion, EmbeddedMcpHost.LegacyVersion, EmbeddedMcpHost.CodexVersion })
         {
             var transport = new HttpClientTransport(new HttpClientTransportOptions
             {

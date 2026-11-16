@@ -97,7 +97,7 @@ currency, and the tool returns no guest details. Availability is not a hold.
 ## Verification
 
 Run `scripts\Test-Mcp.ps1`. It builds an independent smoke-test executable,
-uses the official client against both supported protocol versions, checks date
+uses the official client against all three supported protocol versions (including Codex's 2025-06-18), checks date
 validation and token rejection, and performs read-only queries against the
 configured database. It then starts the real app with all HMS environment
 variables cleared, calls the endpoint, closes the login normally, and checks

@@ -124,7 +124,10 @@ def check_config(path):
 def rpc(method, params, request_id, timeout):
     payload = json.dumps({'jsonrpc': '2.0', 'id': request_id, 'method': method, 'params': params}).encode()
     headers = {'Authorization': 'Bearer 123456', 'Accept': 'application/json, text/event-stream',
-               'Content-Type': 'application/json', 'MCP-Protocol-Version': '2025-11-25'}
+               'Content-Type': 'application/json', 'MCP-Protocol-Version': '2025-06-18'}
+    # Match Codex: negotiate in the initialize body, then send the agreed header.
+    if method == 'initialize':
+        headers.pop('MCP-Protocol-Version')
     request = urllib.request.Request(URL, data=payload, headers=headers)
     # A corporate proxy must not intercept the loopback connection.
     with urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request, timeout=timeout) as response:
@@ -144,8 +147,10 @@ def rpc(method, params, request_id, timeout):
 
 
 def probe(availability=False, check_in='2026-11-18', check_out='2026-11-21'):
-    hello = rpc('initialize', {'protocolVersion': '2025-11-25', 'capabilities': {},
+    hello = rpc('initialize', {'protocolVersion': '2025-06-18', 'capabilities': {},
                 'clientInfo': {'name': 'winforms-demo-check', 'version': '1.0.0'}}, 1, 10)
+    if hello.get('protocolVersion') != '2025-06-18':
+        raise ValueError('Host did not accept the protocol revision used by Codex: 2025-06-18.')
     name = hello.get('serverInfo', {}).get('name')
     if name != 'hotel-reservations-net48':
         raise ValueError('Wrong host answered. Stop the other hotel host and start the WinForms demo.')
@@ -153,7 +158,7 @@ def probe(availability=False, check_in='2026-11-18', check_out='2026-11-21'):
     catalog = rpc('tools/list', {}, 2, 10)
     if [t['name'] for t in catalog.get('tools', [])] != ['GetAvailableRooms']:
         raise ValueError('Unexpected tool catalog; this is not the one-tool WinForms demo.')
-    print('PASS: hotel-reservations-net48 answered MCP initialization and exposes only GetAvailableRooms.')
+    print('PASS: hotel-reservations-net48 accepted Codex protocol 2025-06-18 and exposes only GetAvailableRooms.')
     if availability:
         result = rpc('tools/call', {'name': 'GetAvailableRooms', 'arguments': {
             'checkIn': check_in, 'checkOut': check_out}}, 3, 300)
@@ -187,7 +192,7 @@ def main():
     except urllib.error.HTTPError as error:
         parser.exit(1, f'HTTP {error.code}: check the fixed token, exact /mcp/ path and running host.\n')
     except (urllib.error.URLError, TimeoutError):
-        parser.exit(1, 'Host unavailable or paused: start Project_HMS with F5, then resume the debugger before --probe.\n')
+        parser.exit(1, 'Cannot reach the host from this execution environment, or it timed out. Run this probe in your own PowerShell with Project_HMS running and the debugger resumed.\n')
     except (ValueError, OSError, AssertionError) as error:
         parser.exit(1, str(error) + '\n')
 

@@ -39,7 +39,7 @@ try {
     $env:HMS_MCP_TOKEN = $null
     $env:HMS_MCP_ENABLED = $null
     $env:HMS_CONNECTION_STRING = $null
-    $headers = @{ Authorization = 'Bearer 123456'; Accept = 'application/json, text/event-stream'; 'MCP-Protocol-Version' = '2025-11-25' }
+    $headers = @{ Authorization = 'Bearer 123456'; Accept = 'application/json, text/event-stream'; 'MCP-Protocol-Version' = '2025-06-18' }
     $exe = Join-Path $root "Project_HMS\bin\$Configuration\Project_HMS.exe"
     $app = Start-Process -FilePath $exe -WorkingDirectory (Split-Path $exe) -WindowStyle Hidden -PassThru
     $discovery = @{ jsonrpc='2.0'; id=1; method='tools/list'; params=@{} } | ConvertTo-Json -Compress

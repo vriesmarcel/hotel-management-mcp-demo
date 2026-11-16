@@ -1,5 +1,27 @@
 # Demo 03 presenter walkthrough
 
+## Transition from the first live demo
+
+Presentation demo 2 is repository checkpoint `demo-03-dotnet10-contexts`; the switch command therefore uses `--demo 3`.
+
+1. Stop the first demo in Visual Studio (Shift+F5) to release port 5057.
+2. In PowerShell, run:
+
+   ```powershell
+   Set-Location C:\source\hotel-management-mcp-demo-worktrees\demo-03-dotnet10-contexts
+   powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Update-DemoDatabase.ps1
+   python .\scripts\Configure-Codex.py --demo 3
+   ```
+
+   On this presenter machine both ignored database configuration files already exist. The update is additive and idempotent. Do not run `Initialize-Demo03.ps1` for a routine transition: that creates another fresh rehearsal database.
+3. Open this checkout's `Project_HMS.sln`. Select Debug and configure multiple startup projects: `Project_HMS` and `Hotel.Mcp.Host`, both Start. Set a breakpoint in `Hotel.Mcp.Host/ReservationTools.cs`, at the start of `GetAvailableRooms`. Press F5 and wait for the host to listen on port 5057.
+4. Fully quit and reopen Codex after the host starts; use a fresh chat. Inspect `/mcp` for the three hotel servers. Enabled configuration alone does not prove discovery; the catalogs should expose five Reservations tools, two Stay Operations tools and three Billing tools.
+5. Ask: "Use GetAvailableRooms for November 18–21, 2026. Show room IDs, categories and nightly rates. Do not book anything." Inspect the arguments at the breakpoint and press F5 to return the result.
+
+`Configure-Codex.py` removes the first demo's tool allowlist and stale authentication settings, supports quoted and nested TOML tables, disables later hotel plugins, and backs up changed configuration. Unrelated settings are preserved. It honors `CODEX_HOME`; `--config` can target another configuration explicitly. Regression checks: `python -B scripts/Test-ContextCodex.py`.
+
+To demonstrate process independence, close only the WinForms window, leaving the host running, and repeat the availability request. If your Visual Studio launch profile ends both processes together, debug the host alone and launch WinForms separately. Desktop demo login: `demo-manager` / `123456`.
+
 ## Prepare
 
 1. Keep the `demo-02-no-refactor` checkout available for the first demo.

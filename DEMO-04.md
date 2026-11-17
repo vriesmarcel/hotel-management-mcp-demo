@@ -4,6 +4,20 @@ Branch: `demo-04-mcp-apps-ui`, based on `demo-03a-booking-skill`.
 
 Worktree: `C:\source\hotel-management-mcp-demo-worktrees\demo-04-mcp-apps-ui`.
 
+## Switching from the one-tool WinForms demo
+
+The finale requires all five Reservations tools: `GetAvailableRooms`, `GetPackages`, `CalculateQuote`, `CreateReservation` and `GetReservation`. An old `enabled_tools = ["GetAvailableRooms"]` setting allows the picker to open but prevents its package, quote and booking calls.
+
+Before starting the finale, run the updated helper from this worktree:
+
+```powershell
+python scripts/Configure-Codex.py --demo 3
+```
+
+`--demo 3` selects the three .NET host routes shared by demos 03, 03a and 04. It removes stale tool filters and environment-token settings, backs up the configuration, and disables duplicate hotel plugin registrations for the standalone MCP mode. To demonstrate a plugin-only connection instead, keep one verified plugin registration and disable the duplicate manual registration deliberately.
+
+Start the finale host, fully restart Codex (or reconnect its MCP servers), and request a fresh `GetAvailableRooms` card. A running host or an enabled connection is not proof that the client has loaded the complete tool catalog. Offline transition checks: `python -B scripts/Test-ContextCodex.py`.
+
 ## The finale in Visual Studio
 
 1. Stop any earlier hotel host using port 5057. Open this worktree's `Project_HMS.sln` in Visual Studio 2026.

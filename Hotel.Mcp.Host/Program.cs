@@ -50,7 +50,20 @@ app.Use(async (http, next) =>
     { http.Response.StatusCode = 403; return; }
     if (http.Request.Headers.Authorization != "Bearer 123456")
     { http.Response.StatusCode = 401; http.Response.Headers.WWWAuthenticate = "Bearer"; return; }
-    await next(http);
+    try
+    {
+        await next(http);
+    }
+    catch (OperationCanceledException oce) 
+    {
+        Console.WriteLine(
+            $"[Canceled] TraceId={http.TraceIdentifier} " +
+            $"{http.Request.Method} {http.Request.Path} " +
+            $"RemoteIp={http.Connection.RemoteIpAddress} " +
+            $"UA={http.Request.Headers.UserAgent}");
+        Console.WriteLine($"[Canceled] {oce.GetType().Name}: {oce.Message}");
+        return;
+    }
 });
 app.MapMcp("/mcp/reservations");
 app.MapMcp("/mcp/stays");

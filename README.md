@@ -1,3 +1,6 @@
+> Part of Marcel de Vries's **Opening Up Your App to AI Agents: A Practical Guide to MCP with .NET**, Visual Studio Live! Orlando 2026.
+> [All demos and prerequisites](https://github.com/vriesmarcel/hotel-management-mcp-demo/blob/main/README.md) · [This checkpoint's walkthrough](DEMO.md)
+
 # Demo 03 — separate .NET 10 MCP host and bounded contexts
 
 This branch starts at `demo-02-no-refactor`. Demo 02 proves the legacy WinForms app can speak MCP without refactoring. Demo 03 extracts shared business operations, removes the in-process HTTP listener, and hosts MCP using `ModelContextProtocol.AspNetCore` 2.4.0 in .NET 10.

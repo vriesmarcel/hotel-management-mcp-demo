@@ -4,6 +4,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <UserSecretsId>f59789ed-b146-488d-8bda-bab64dad65a9</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\Demo\ReferenceResources.cs" Link="ReferenceResources.cs" />

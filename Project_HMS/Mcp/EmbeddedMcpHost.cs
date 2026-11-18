@@ -89,58 +89,41 @@ namespace Project_HMS.Mcp
             using var abort = timeout.Token.Register(() => { try { response.Abort(); } catch (ObjectDisposedException) { } });
             try
             {
-                response.Headers["Cache-Control"] = "no-store";
-                if (!IPAddress.IsLoopback(request.RemoteEndPoint.Address) ||
-                    !string.Equals(request.Headers["Host"], Endpoint.Authority, StringComparison.OrdinalIgnoreCase) ||
-                    (request.Headers["Origin"] != null && request.Headers["Origin"] != Endpoint.GetLeftPart(UriPartial.Authority)))
-                { response.StatusCode = 403; return; }
-                if (request.Url.AbsolutePath != Endpoint.AbsolutePath || request.Url.Query.Length != 0)
-                { response.StatusCode = 404; return; }
-                if (!Authorized(request.Headers["Authorization"]))
-                {
-                    response.StatusCode = 401;
-                    // Framework requires AddHeader for this restricted response header.
-                    response.AddHeader("WWW-Authenticate", "Bearer realm=\"hotel-local-demo\"");
-                    return;
-                }
-                if (request.HttpMethod != "POST")
-                { response.StatusCode = 405; response.Headers["Allow"] = "POST"; return; }
-                if (!MediaTypeHeaderValue.TryParse(request.ContentType, out var contentType) || contentType.MediaType != "application/json")
-                { response.StatusCode = 415; return; }
-                var accept = (request.Headers["Accept"] ?? "").Split(',').Select(x => x.Split(';')[0].Trim()).ToArray();
-                if (!accept.Contains("application/json") || !accept.Contains("text/event-stream"))
-                { response.StatusCode = 406; return; }
+                ApplyNoCacheHeader(response);
+                if (!TryValidateSecurityBoundary(request, response)) return;
+                if (!TryValidateEndpoint(request, response)) return;
+                if (!TryAuthorizeRequest(request, response)) return;
+                if (!TryValidateHttpMethod(request, response)) return;
+                if (!TryValidateContentType(request, response)) return;
+                if (!TryValidateAcceptHeader(request, response)) return;
                 var bytes = await ReadBoundedAsync(request.InputStream, timeout.Token).ConfigureAwait(false);
                 using var document = JsonDocument.Parse(bytes);
                 var root = document.RootElement;
-                if (root.ValueKind != JsonValueKind.Object || GetString(root, "jsonrpc") != "2.0" || GetString(root, "method") == null)
-                { await Error(response, null, -32600, "Invalid JSON-RPC request.", 400); return; }
-                JsonElement? id = root.TryGetProperty("id", out var requestId) ? requestId : (JsonElement?)null;
-                if (id.HasValue && id.Value.ValueKind != JsonValueKind.String &&
-                    (id.Value.ValueKind != JsonValueKind.Number || !id.Value.TryGetInt64(out _)))
-                { await Error(response, null, -32600, "Invalid request ID.", 400); return; }
+                if (!IsValidJsonRpcEnvelope(root))
+                {
+                    await Error(response, null, -32600, "Invalid JSON-RPC request.", 400);
+                    return;
+                }
+
+                if (!TryGetRequestId(root, out var id))
+                {
+                    await Error(response, null, -32600, "Invalid request ID.", 400);
+                    return;
+                }
+
                 string method = GetString(root, "method");
                 var parameters = root.TryGetProperty("params", out var parsed) ? parsed : default;
-                string version = request.Headers["MCP-Protocol-Version"];
-                // Only the legacy initialization exchange may omit the version header.
-                if (version == null && method == "initialize") version = GetString(parameters, "protocolVersion");
-                if (version == null && method == "notifications/initialized") version = LegacyVersion;
-                if (version != ModernVersion && version != LegacyVersion && version != CodexVersion)
+                string version = ResolveProtocolVersion(request, method, parameters);
+
+                if (!IsSupportedProtocolVersion(version))
                 {
                     await Error(response, id, -32022, "Unsupported protocol version.", 400,
                         new { requested = version, supported = new[] { ModernVersion, LegacyVersion, CodexVersion } });
                     return;
                 }
-                if (version == ModernVersion)
-                {
-                    var meta = parameters.ValueKind == JsonValueKind.Object && parameters.TryGetProperty("_meta", out var m) ? m : default;
-                    if (request.Headers["Mcp-Method"] != method || GetString(meta, "io.modelcontextprotocol/protocolVersion") != version ||
-                        ((method == "tools/call" || method == "prompts/get" || method == "resources/read") &&
-                        DecodeHeader(request.Headers["Mcp-Name"]) != (GetString(parameters, "name") ?? GetString(parameters, "uri"))))
-                    { await Error(response, id, -32020, "Required MCP headers must match the request body.", 400); return; }
-                }
-                else if (method == "initialize" && GetString(parameters, "protocolVersion") != version)
-                { await Error(response, id, -32020, "Protocol header and initialize version differ.", 400); return; }
+
+                if (!await TryValidateProtocolConsistencyAsync(request, response, method, parameters, version, id).ConfigureAwait(false))
+                    return;
 
                 var message = JsonSerializer.Deserialize<JsonRpcMessage>(bytes, McpJsonUtilities.DefaultOptions);
                 message.Context = new JsonRpcMessageContext { ProtocolVersion = version };
@@ -167,8 +150,7 @@ namespace Project_HMS.Mcp
                     var wrote = await transport.HandlePostRequestAsync(message, response.OutputStream, first =>
                     {
                         if (first is JsonRpcError error)
-                            response.StatusCode = error.Error.Code == -32601 ? 404 :
-                                error.Error.Code == -32022 || error.Error.Code == -32020 || error.Error.Code == -32021 ? 400 : 200;
+                            response.StatusCode = GetStreamResponseStatusCode(error.Error.Code);
                         return default;
                     }, timeout.Token).ConfigureAwait(false);
                     if (!wrote) response.StatusCode = 202;
@@ -190,6 +172,138 @@ namespace Project_HMS.Mcp
                 try { response.StatusCode = 500; } catch (Exception) { }
             }
             finally { try { response.Close(); } catch (ObjectDisposedException) { } }
+        }
+
+        private void ApplyNoCacheHeader(HttpListenerResponse response)
+        {
+            response.Headers["Cache-Control"] = "no-store";
+        }
+
+        private bool TryValidateSecurityBoundary(HttpListenerRequest request, HttpListenerResponse response)
+        {
+            bool isLoopback = request.RemoteEndPoint != null && IPAddress.IsLoopback(request.RemoteEndPoint.Address);
+            bool hostMatches = string.Equals(request.Headers["Host"], Endpoint.Authority, StringComparison.OrdinalIgnoreCase);
+            bool originMatches = request.Headers["Origin"] == null || request.Headers["Origin"] == Endpoint.GetLeftPart(UriPartial.Authority);
+            if (isLoopback && hostMatches && originMatches) return true;
+            response.StatusCode = 403;
+            return false;
+        }
+
+        private bool TryValidateEndpoint(HttpListenerRequest request, HttpListenerResponse response)
+        {
+            bool pathMatches = request.Url.AbsolutePath == Endpoint.AbsolutePath;
+            bool hasNoQuery = request.Url.Query.Length == 0;
+            if (pathMatches && hasNoQuery) return true;
+            response.StatusCode = 404;
+            return false;
+        }
+
+        private bool TryAuthorizeRequest(HttpListenerRequest request, HttpListenerResponse response)
+        {
+            if (Authorized(request.Headers["Authorization"])) return true;
+            response.StatusCode = 401;
+            // Framework requires AddHeader for this restricted response header.
+            response.AddHeader("WWW-Authenticate", "Bearer realm=\"hotel-local-demo\"");
+            return false;
+        }
+
+        private static bool TryValidateHttpMethod(HttpListenerRequest request, HttpListenerResponse response)
+        {
+            if (request.HttpMethod == "POST") return true;
+            response.StatusCode = 405;
+            response.Headers["Allow"] = "POST";
+            return false;
+        }
+
+        private static bool TryValidateContentType(HttpListenerRequest request, HttpListenerResponse response)
+        {
+            if (MediaTypeHeaderValue.TryParse(request.ContentType, out var contentType) && contentType.MediaType == "application/json")
+                return true;
+            response.StatusCode = 415;
+            return false;
+        }
+
+        private static bool TryValidateAcceptHeader(HttpListenerRequest request, HttpListenerResponse response)
+        {
+            var accept = GetAcceptedMediaTypes(request.Headers["Accept"]);
+            if (accept.Contains("application/json") && accept.Contains("text/event-stream")) return true;
+            response.StatusCode = 406;
+            return false;
+        }
+
+        private static string[] GetAcceptedMediaTypes(string acceptHeader)
+        {
+            return (acceptHeader ?? string.Empty)
+                .Split(',')
+                .Select(value => value.Split(';')[0].Trim())
+                .ToArray();
+        }
+
+        private static bool IsValidJsonRpcEnvelope(JsonElement root)
+        {
+            return root.ValueKind == JsonValueKind.Object &&
+                GetString(root, "jsonrpc") == "2.0" &&
+                GetString(root, "method") != null;
+        }
+
+        private static bool TryGetRequestId(JsonElement root, out JsonElement? id)
+        {
+            id = root.TryGetProperty("id", out var requestId) ? requestId : (JsonElement?)null;
+            if (!id.HasValue) return true;
+            return id.Value.ValueKind == JsonValueKind.String ||
+                (id.Value.ValueKind == JsonValueKind.Number && id.Value.TryGetInt64(out _));
+        }
+
+        private string ResolveProtocolVersion(HttpListenerRequest request, string method, JsonElement parameters)
+        {
+            string version = request.Headers["MCP-Protocol-Version"];
+            // Only the legacy initialization exchange may omit the version header.
+            if (version == null && method == "initialize") version = GetString(parameters, "protocolVersion");
+            if (version == null && method == "notifications/initialized") version = LegacyVersion;
+            return version;
+        }
+
+        private static bool IsSupportedProtocolVersion(string version)
+        {
+            return version == ModernVersion || version == LegacyVersion || version == CodexVersion;
+        }
+
+        private async Task<bool> TryValidateProtocolConsistencyAsync(
+            HttpListenerRequest request,
+            HttpListenerResponse response,
+            string method,
+            JsonElement parameters,
+            string version,
+            JsonElement? id)
+        {
+            if (version == ModernVersion)
+            {
+                var meta = parameters.ValueKind == JsonValueKind.Object && parameters.TryGetProperty("_meta", out var m) ? m : default;
+                bool methodMatches = request.Headers["Mcp-Method"] == method;
+                bool versionMatches = GetString(meta, "io.modelcontextprotocol/protocolVersion") == version;
+                bool nameMatches = !RequiresMcpNameHeaderMatch(method) ||
+                    DecodeHeader(request.Headers["Mcp-Name"]) == (GetString(parameters, "name") ?? GetString(parameters, "uri"));
+                if (methodMatches && versionMatches && nameMatches) return true;
+
+                await Error(response, id, -32020, "Required MCP headers must match the request body.", 400);
+                return false;
+            }
+
+            if (method != "initialize" || GetString(parameters, "protocolVersion") == version) return true;
+            await Error(response, id, -32020, "Protocol header and initialize version differ.", 400);
+            return false;
+        }
+
+        private static bool RequiresMcpNameHeaderMatch(string method)
+        {
+            return method == "tools/call" || method == "prompts/get" || method == "resources/read";
+        }
+
+        private static int GetStreamResponseStatusCode(int rpcErrorCode)
+        {
+            if (rpcErrorCode == -32601) return 404;
+            if (rpcErrorCode == -32022 || rpcErrorCode == -32020 || rpcErrorCode == -32021) return 400;
+            return 200;
         }
 
         private bool Authorized(string header)

@@ -1,3 +1,6 @@
+> Part of Marcel de Vries's **Opening Up Your App to AI Agents: A Practical Guide to MCP with .NET**, Visual Studio Live! Orlando 2026.
+> [All demos and prerequisites](https://github.com/vriesmarcel/hotel-management-mcp-demo/blob/main/README.md) · [This checkpoint's walkthrough](DEMO-1-QUICKSTART.md)
+
 # Hotel MCP demo — no refactoring required
 
 This is `demo-02-no-refactor`, the first MCP demonstration for

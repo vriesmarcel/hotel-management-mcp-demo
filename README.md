@@ -1,3 +1,6 @@
+> Part of Marcel de Vries's **Opening Up Your App to AI Agents: A Practical Guide to MCP with .NET**, Visual Studio Live! Orlando 2026.
+> [All demos and prerequisites](https://github.com/vriesmarcel/hotel-management-mcp-demo/blob/main/README.md) · [This checkpoint's walkthrough](DEMO-03A.md)
+
 Demo 03a adds the booking skill and a local plugin bundle. See [the skill walkthrough](DEMO-03A.md). Start with `python scripts/Install-BookingSkill.py`, then invoke `$book-hotel-room` in a new chat. The .NET host and application below are unchanged.
 
 # Demo 03 — separate .NET 10 MCP host and bounded contexts
